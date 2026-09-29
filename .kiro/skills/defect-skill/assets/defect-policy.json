@@ -1,0 +1,41 @@
+{
+  "description": "Defect classification and JIRA creation rules. Defect Agent reads this to categorize failures and decide actions.",
+  "version": "1.0.0",
+  "classification": {
+    "productDefect": {
+      "criteria": "Test logic is correct but application behaves unexpectedly",
+      "jiraAction": "Create Bug",
+      "priority": "Derived from test priority (P1 test failure = P1 bug)",
+      "labels": ["qe-pipeline-generated", "automated-regression"]
+    },
+    "testScriptError": {
+      "criteria": "Test script has a problem (selector stale, logic error, flaky assertion)",
+      "jiraAction": "Create Task",
+      "assignTo": "QE team",
+      "labels": ["qe-pipeline-generated", "test-maintenance"]
+    },
+    "environmentIssue": {
+      "criteria": "Infrastructure failure (timeout, DNS, 503, VPN, tunnel down)",
+      "jiraAction": "No JIRA created",
+      "action": "Log in report only. Flag for retest."
+    }
+  },
+  "deduplication": {
+    "strategy": "Search JIRA by TC-ID in summary before creating",
+    "matchField": "summary",
+    "ifDuplicateFound": "Add comment to existing issue instead of creating new"
+  },
+  "jiraDefaults": {
+    "projectKey": "DERIVED at runtime from the story key (storyKey.split('-')[0], e.g. BREW-94 -> BREW). NOT a field in pipeline-config.json.",
+    "issueTypeBug": "Bug",
+    "issueTypeTask": "Task",
+    "linkType": "Relates",
+    "labels": ["qe-pipeline-generated"],
+    "commentMaxChars": 2000
+  },
+  "severity": {
+    "P1": "Critical path blocked, no workaround",
+    "P2": "Major feature impacted, workaround exists",
+    "P3": "Minor issue, cosmetic or edge case"
+  }
+}

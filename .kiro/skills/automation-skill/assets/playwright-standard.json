@@ -1,0 +1,282 @@
+{
+  "description": "Defines the flat layered architecture rules, dependency constraints, generation patterns, and tag format for the unified regression suite. App-agnostic: every application resolves its own isolated suite; nothing here is specific to any application.",
+  "version": "2.0.0",
+  "architecture": {
+    "layers": [
+      {
+        "name": "tests",
+        "directory": "tests/",
+        "filePattern": "*.spec.ts",
+        "allowedImportsFrom": ["fixtures"],
+        "bannedPatterns": [
+          "page.getByTestId(",
+          "page.getByRole(",
+          "page.getByLabel(",
+          "page.getByText(",
+          "page.locator(",
+          "[data-testid=",
+          "[aria-label=",
+          "import.*from.*pages/",
+          "import.*from.*components/",
+          "import.*from.*flows/",
+          "import.*from.*journeys/",
+          "import.*from.*services/",
+          "import.*from.*core/"
+        ]
+      },
+      {
+        "name": "fixtures",
+        "directory": "fixtures/",
+        "filePattern": "*.fixture.ts",
+        "allowedImportsFrom": ["flows", "journeys", "data", "core"],
+        "bannedPatterns": [
+          "import.*from.*tests/",
+          "import.*from.*pages/",
+          "import.*from.*components/",
+          "import.*from.*services/"
+        ]
+      },
+      {
+        "name": "journeys",
+        "directory": "journeys/",
+        "filePattern": "*.journey.ts",
+        "allowedImportsFrom": ["flows", "data", "core"],
+        "bannedPatterns": [
+          "page.getByTestId(",
+          "page.getByRole(",
+          "page.getByLabel(",
+          "page.getByText(",
+          "page.locator(",
+          "[data-testid=",
+          "[aria-label=",
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*pages/",
+          "import.*from.*components/",
+          "import.*from.*services/"
+        ]
+      },
+      {
+        "name": "flows",
+        "directory": "flows/",
+        "filePattern": "*.flow.ts",
+        "allowedImportsFrom": ["pages", "services", "data", "core"],
+        "bannedPatterns": [
+          "page.getByTestId(",
+          "page.getByRole(",
+          "page.getByLabel(",
+          "page.getByText(",
+          "page.locator(",
+          "[data-testid=",
+          "[aria-label=",
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*components/"
+        ]
+      },
+      {
+        "name": "services",
+        "directory": "services/",
+        "filePattern": "*.service.ts",
+        "allowedImportsFrom": ["data", "core"],
+        "bannedPatterns": [
+          "page.getByTestId(",
+          "page.getByRole(",
+          "page.getByLabel(",
+          "page.getByText(",
+          "page.locator(",
+          "[data-testid=",
+          "[aria-label=",
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*flows/",
+          "import.*from.*pages/",
+          "import.*from.*components/"
+        ]
+      },
+      {
+        "name": "pages",
+        "directory": "pages/",
+        "filePattern": "*.page.ts",
+        "allowedImportsFrom": ["components", "core"],
+        "bannedPatterns": [
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*flows/",
+          "import.*from.*services/"
+        ]
+      },
+      {
+        "name": "components",
+        "directory": "components/",
+        "filePattern": "*.component.ts",
+        "allowedImportsFrom": ["core"],
+        "bannedPatterns": [
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*flows/",
+          "import.*from.*services/",
+          "import.*from.*pages/",
+          "import.*from.*data/"
+        ]
+      },
+      {
+        "name": "data",
+        "directory": "data/",
+        "filePattern": "*.data.ts",
+        "allowedImportsFrom": ["core"],
+        "bannedPatterns": [
+          "page.getByTestId(",
+          "page.getByRole(",
+          "page.locator(",
+          "[data-testid=",
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*flows/",
+          "import.*from.*services/",
+          "import.*from.*pages/",
+          "import.*from.*components/"
+        ]
+      },
+      {
+        "name": "core",
+        "directory": "core/",
+        "filePattern": "*.ts",
+        "allowedImportsFrom": [],
+        "bannedPatterns": [
+          "import.*from.*tests/",
+          "import.*from.*fixtures/",
+          "import.*from.*journeys/",
+          "import.*from.*flows/",
+          "import.*from.*services/",
+          "import.*from.*pages/",
+          "import.*from.*components/",
+          "import.*from.*data/"
+        ]
+      }
+    ],
+    "dependencyDirection": "top-down",
+    "enforcedBy": "automation-skill",
+    "_hierarchyNote": "Numeric levels: core=0, data=1, components=1, pages=2, services=2, flows=3, journeys=4, fixtures=5, tests=6. data is a pure test-data layer (typed constants/variations) at level 1 alongside components; it imports core only and holds NO logic/locators/API calls. pages and services are peers at level 2 (UI vs API implementation). services/flows/journeys/fixtures may import data (test data flows in as parameters — never per-variant methods like createVariantAX/createVariantBX). A flow may compose BOTH a page (UI) and a service (API) — the hybrid-flow mechanism. A journey composes multiple flows (cross-feature) and contains NO pages/services/locators."
+  },
+  "layers": {
+    "test": {
+      "filePattern": "{feature}.spec.ts",
+      "requiredTags": ["domain", "suite"],
+      "tagFormat": {
+        "domain": "@domain:{value}",
+        "suite": "@suite:{smoke|regression}  — a test in both suites carries both: @suite:smoke @suite:regression"
+      },
+      "storyAssociation": "Story keys are NOT tags. They live in registry stories[] arrays (domain-index.json + catalogs), which support many-to-many (a shared test can belong to multiple stories). An optional non-functional '// story: {KEY}' comment may appear in the spec header for humans only.",
+      "imports": {
+        "allowed": ["fixtures"],
+        "banned": ["pages", "components", "services", "flows", "journeys", "core"]
+      },
+      "structure": "describe > test with fixture injection"
+    },
+    "fixture": {
+      "filePattern": "{domain}.fixture.ts",
+      "exports": "Playwright fixture extension with flow/journey/data and dependency injection",
+      "imports": {
+        "allowed": ["flows", "journeys", "data", "core"],
+        "banned": ["tests", "pages", "components", "services"]
+      }
+    },
+    "journey": {
+      "filePattern": "{journey-name}.journey.ts",
+      "exports": "single class with one public execute() method that composes MULTIPLE flows across features (cross-feature orchestration)",
+      "imports": {
+        "allowed": ["flows", "data", "core"],
+        "banned": ["pages", "components", "services", "fixtures", "tests"]
+      },
+      "noLocators": true,
+      "purpose": "Cross-feature business scenario reusable across tests with different data (e.g. a multi-step end-to-end path composed from several single-domain flows). Does NOT call pages/services directly — it orchestrates flows."
+    },
+    "flow": {
+      "filePattern": "{journey}.flow.ts",
+      "exports": "single class with one public execute() method (single-domain business capability)",
+      "imports": {
+        "allowed": ["pages", "services", "data", "core"],
+        "banned": ["components", "journeys", "fixtures", "tests"]
+      },
+      "noLocators": true,
+      "hybrid": "A flow may compose a UI page AND an API service to express hybrid scenarios (e.g. create via service/API, then verify via page/UI, then check backend via service). The flow controls the scenario; UI vs API is an implementation choice underneath it."
+    },
+    "data": {
+      "filePattern": "{name}.data.ts",
+      "exports": "typed test-data constants and variations (e.g. datasets keyed by variant). Pure data — no logic, no locators, no API calls.",
+      "imports": {
+        "allowed": ["core"],
+        "banned": ["components", "pages", "services", "flows", "journeys", "fixtures", "tests"]
+      },
+      "purpose": "Holds test data and its variations so callers pass a dataset in (e.g. flow.execute(dataset)) instead of coding one method per variant. Adding a new variation = add a data entry, not a new method.",
+      "noLocators": true,
+      "noLogic": true
+    },
+    "service": {
+      "filePattern": "{name}.service.ts",
+      "exports": "class exposing business API operations built on the core ApiClient (e.g. create/get/update/delete + validate-response helpers)",
+      "imports": {
+        "allowed": ["data", "core"],
+        "banned": ["components", "pages", "flows", "journeys", "fixtures", "tests"]
+      },
+      "ownsApiCalls": true,
+      "noLocators": true,
+      "purpose": "API implementation counterpart to a page. Services own HTTP request/response handling via core ApiClient; flows call service methods for the API side of a scenario. Never contains UI locators."
+    },
+    "page": {
+      "filePattern": "{page-name}.page.ts",
+      "ownsLocators": true,
+      "composesComponents": true,
+      "imports": {
+        "allowed": ["components", "core"],
+        "banned": ["services", "flows", "journeys", "fixtures", "tests"]
+      },
+      "locatorEvidence": "required from playwright-mcp"
+    },
+    "component": {
+      "filePattern": "{widget-name}.component.ts",
+      "ownsLocators": true,
+      "imports": {
+        "allowed": ["core"],
+        "banned": ["pages", "services", "flows", "journeys", "fixtures", "tests"]
+      }
+    },
+    "core": {
+      "modules": ["base-page", "api-client", "auth-handler", "constants"],
+      "imports": {
+        "allowed": [],
+        "banned": ["components", "pages", "services", "flows", "journeys", "fixtures", "tests"]
+      }
+    }
+  },
+  "generation": {
+    "reuseFirst": true,
+    "atomicRegistryUpdate": true,
+    "localValidation": true,
+    "generationOrder": ["data", "components", "pages", "services", "flows", "journeys", "fixtures", "tests"]
+  },
+  "constraints": {
+    "noLocatorsInTests": true,
+    "noLocatorsInFlows": true,
+    "noLocatorsInJourneys": true,
+    "noLocatorsInServices": true,
+    "noDirectPageImportsInTests": true,
+    "noUpwardImports": true,
+    "singleMethodPerFlow": true,
+    "singleMethodPerJourney": true,
+    "twoTagsPerTest": true,
+    "flatLayers": "No subdirectories in any layer. tests/, journeys/, flows/, services/, pages/, components/, data/, core/ contain files directly (e.g. tests/place-order.spec.ts, data/order.data.ts). Domain is a tag, not a folder.",
+    "noLocatorsInData": true,
+    "dataDrivenVariations": "Variations (e.g. per-region/per-type datasets) live as entries in data/ and are passed into flow/service methods as parameters. NEVER create one method per variant (no createVariantAX/createVariantBX). Adding a variation = add a data entry, reuse the same capability method."
+  },
+  "tagFormat": {
+    "domain": "@domain:{value}",
+    "suite": "@suite:{smoke|regression} — a test in both suites carries both tags; story keys live in registry stories[] only"
+  }
+}

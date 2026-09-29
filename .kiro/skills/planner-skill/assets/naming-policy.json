@@ -1,0 +1,21 @@
+{
+  "description": "Naming conventions OWNED BY the planner skill: scenario and risk identifiers. Not shared — each skill holds only the naming rules it produces.",
+  "version": "3.0.0",
+  "patterns": {
+    "scenarioId": {
+      "format": "SC-{NNN}",
+      "regex": "^SC-\\d{3}$",
+      "example": "SC-001",
+      "rules": ["Sequential, no gaps", "No reuse of deprecated IDs"]
+    },
+    "riskId": {
+      "format": "RISK-{NNN}",
+      "regex": "^RISK-\\d{3}$",
+      "example": "RISK-001"
+    }
+  },
+  "sequencing": {
+    "rule": "New items get NEXT available number. No gaps. No reuse.",
+    "startFrom": 1
+  }
+}

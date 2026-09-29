@@ -1,0 +1,72 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "defect-summary.schema.json",
+  "title": "Defect Summary Contract",
+  "description": "Machine-validated output of the Defect Skill. Records bugs/tasks created, duplicates found, and non-actionable failures.",
+  "type": "object",
+  "required": ["storyKey", "storyUrl", "qualityGateStatus", "date", "bugsCreated", "tasksCreated", "duplicatesFound", "notActionable"],
+  "properties": {
+    "storyKey": { "type": "string", "pattern": "^[A-Z]+-\\d+$" },
+    "storyUrl": { "type": "string" },
+    "qualityGateStatus": { "type": "string", "enum": ["PASSED", "FAILED", "NOT_EVALUATED"] },
+    "date": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["complete", "JIRA pending", "no-actionable-failures"] },
+    "bugsCreated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["jiraKey", "jiraUrl", "testCaseId", "summary", "priority"],
+        "properties": {
+          "jiraKey": { "type": "string" },
+          "jiraUrl": { "type": "string" },
+          "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "summary": { "type": "string", "minLength": 1 },
+          "priority": { "type": "string", "enum": ["Highest", "High", "Medium", "Low", "Lowest"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "tasksCreated": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["jiraKey", "jiraUrl", "testCaseId", "summary"],
+        "properties": {
+          "jiraKey": { "type": "string" },
+          "jiraUrl": { "type": "string" },
+          "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "summary": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "duplicatesFound": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testCaseId", "existingIssue", "existingIssueUrl", "action"],
+        "properties": {
+          "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "existingIssue": { "type": "string" },
+          "existingIssueUrl": { "type": "string" },
+          "action": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "notActionable": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testCaseId", "category", "reason"],
+        "properties": {
+          "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "category": { "type": "string", "enum": ["Environment Issue", "Flaky Test"] },
+          "reason": { "type": "string", "minLength": 1 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

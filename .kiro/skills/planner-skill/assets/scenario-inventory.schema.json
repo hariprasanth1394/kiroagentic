@@ -1,0 +1,263 @@
+{
+  "$id": "scenario-inventory.schema.json",
+  "jsonSchemaDraft": "draft-07",
+  "title": "Scenario Inventory Contract (v4)",
+  "description": "Machine-validated output of the Planner Agent. Consumed by Tester Agent. v4 removes catalog-matching fields and adds dimension, steps, and structured risks.",
+  "type": "object",
+  "required": ["storyKey", "storyTitle", "storyUrl", "generatedAt", "scope", "scenarios", "risks"],
+  "additionalProperties": false,
+  "properties": {
+    "storyKey": {
+      "type": "string",
+      "pattern": "^[A-Z]+-\\d+$",
+      "description": "JIRA story key (e.g., BREW-101)"
+    },
+    "storyTitle": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Title of the JIRA story"
+    },
+    "storyUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Full URL to the JIRA story"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of generation"
+    },
+    "scope": {
+      "type": "object",
+      "required": ["estimatedScenarios", "acceptanceCriteria", "businessDomain"],
+      "additionalProperties": false,
+      "properties": {
+        "estimatedScenarios": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Estimated number of scenarios to be generated"
+        },
+        "acceptanceCriteria": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of acceptance criteria in the story"
+        },
+        "businessDomain": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Derived business domain for tag assignment (e.g., checkout, auth, booking)"
+        }
+      }
+    },
+    "environmentLimitations": {
+      "type": "array",
+      "description": "Optional. Specific things that could not be inspected/reached (Planner Step 2/4). Each entry names the exact full URL/endpoint and reason (never a blanket 'domain not accessible'). Consumed downstream for URL/health reasoning.",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "statefulElements": {
+      "type": "array",
+      "description": "Optional. UI elements with observable state transitions discovered during app inspection (app-inspection.md). Helps the Tester/Automation know both states.",
+      "items": {
+        "type": "object",
+        "required": ["element", "stateBefore", "stateAfter"],
+        "additionalProperties": false,
+        "properties": {
+          "element": { "type": "string", "minLength": 1 },
+          "stateBefore": { "type": "string" },
+          "stateAfter": { "type": "string" }
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "object",
+      "description": "Optional. Availability signals gathered from the story (output-formats.md). Flows to the Tester as preconditions.",
+      "additionalProperties": false,
+      "properties": {
+        "apiKeyAvailable": { "type": "string", "enum": ["available", "missing", "not_needed"] },
+        "apiAuthTokenAvailable": { "type": "string", "enum": ["available", "missing", "not_needed"] },
+        "dynamicIdFormatDocumented": { "type": "string", "enum": ["documented", "tbd", "not_needed"] },
+        "apiSpecsCurrent": { "type": "string", "enum": ["confirmed", "stale_risk", "not_applicable"] }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "description", "category", "dimension", "preconditions", "steps", "expectedOutcome", "confidence", "source", "priority", "riskIds"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^SC-\\d{3}$",
+            "description": "Scenario identifier in SC-001 format"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short descriptive title of the scenario"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Detailed description of what this scenario tests"
+          },
+          "category": {
+            "type": "string",
+            "enum": ["positive", "negative", "boundary", "error-handling"],
+            "description": "Scenario category assigned by Planner Step 6. Priority when multiple fit: error-handling > boundary > negative > positive. The Tester reads this to decide TC generation and high-risk expansion."
+          },
+          "dimension": {
+            "type": "string",
+            "enum": ["UI", "API", "NF"],
+            "description": "Testing dimension this scenario targets (UI, API, or NF for non-functional)"
+          },
+          "preconditions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Conditions that must be true before executing this scenario"
+          },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["action", "target", "value"],
+              "additionalProperties": false,
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The action to perform (e.g., click, fill, navigate)"
+                },
+                "target": {
+                  "type": "string",
+                  "description": "The target element or endpoint for the action"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The value to use with the action (empty string if not applicable)"
+                }
+              }
+            },
+            "description": "Ordered sequence of test steps"
+          },
+          "expectedOutcome": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Expected result after executing all steps"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Confidence level in the scenario's completeness and accuracy"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Origin of this scenario. An acceptance-criterion reference (e.g. 'AC-2'), a PKB reference, or a fusion of both (e.g. 'AC-2 + PKB:screens/wizard-test-location', or 'PKB:workflows/offline-booking-flow (in-scope gap)'). See planner references/pkb-fusion.md."
+          },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Execution priority for this scenario"
+          },
+          "riskIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^RISK-\\d{3}$"
+            },
+            "description": "References to associated risk entries"
+          },
+          "dataDependencies": {
+            "type": "array",
+            "description": "Data this scenario needs from another story/feature so it stays executable (Item 10). Optional.",
+            "items": {
+              "type": "object",
+              "required": ["needs", "source", "howToObtain"],
+              "additionalProperties": false,
+              "properties": {
+                "needs": { "type": "string", "minLength": 1, "description": "What data is required (e.g., 'a registered user email', 'an order id')" },
+                "fromStory": { "type": "string", "description": "Originating story key if known (e.g., BREW-90), else empty" },
+                "source": { "type": "string", "enum": ["api", "fixture", "manual", "prior-test"], "description": "How the data is produced/obtained" },
+                "howToObtain": { "type": "string", "minLength": 1, "description": "Concrete way to obtain it: endpoint to call, fixture to reuse, or producing TC/story" }
+              }
+            }
+          },
+          "pkbRefs": {
+            "type": "object",
+            "description": "Optional. Product Knowledge Base artifacts this scenario is grounded in (AC + PKB fusion, see planner references/pkb-fusion.md). Carries page/flow context across the contract so the Tester can resolve the referenced screen docs and build precise steps/preconditions. Omit entirely when the scenario has no PKB match. PKB file base names only — no path, no '.md'.",
+            "additionalProperties": false,
+            "properties": {
+              "screens": {
+                "type": "array",
+                "items": { "type": "string", "minLength": 1 },
+                "description": "PKB screen doc base name(s) this scenario touches, e.g. ['wizard-test-location', 'book-ielts-sessions'] (resolves to {pkbDir}/screens/{name}.md)"
+              },
+              "workflow": {
+                "type": "string",
+                "description": "PKB workflow doc base name this scenario follows, e.g. 'offline-booking-flow' (resolves to {pkbDir}/workflows/{name}.md)"
+              },
+              "navigationPath": {
+                "type": "string",
+                "description": "The documented page sequence this scenario traverses, e.g. '/wizard/test-location → /wizard/test-date/{loc} → /book-ielts'"
+              }
+            }
+          }
+        }
+      }
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "featureArea", "severity", "likelihood", "score", "evidence", "mitigation"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^RISK-\\d{3}$",
+            "description": "Risk identifier in RISK-001 format"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Short description of the risk"
+          },
+          "featureArea": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The specific feature/area this risk targets. Consumed by the Tester skill's risk-based expansion to know WHAT to add boundary/negative tests for."
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low"],
+            "description": "Impact severity if the risk materializes"
+          },
+          "likelihood": {
+            "type": "string",
+            "enum": ["High", "Medium", "Low"],
+            "description": "Probability of the risk occurring"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Risk score = severityValue * likelihoodValue (Critical=4, High=3, Medium=2, Low=1 x High=3, Medium=2, Low=1)"
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "description": "MANDATORY. Why this score — shows the severity × likelihood math and the source signals (bug count, dependencies, complexity, inspection). Planner Step 7 requires this; the Tester reads it to target expansion. No score without evidence."
+          },
+          "mitigation": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Strategy to mitigate or reduce the risk"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "description": "Quality gate thresholds (authoritative source; read by the reporter skill). Keys use snake_case, matching quality-gate-policy.json.",
+  "_enforcement": "The reporter gate enforces: minPassRate, maxCriticalFailures, maxTestDuration_ms, criticalTcPassRate. maxOpenP1Defects/maxOpenP2Defects are DEFERRED — they require JIRA open-defect counts the reporter does not query in v4 (see quality-gate-policy.json → thresholdEnforcement.deferred). They are kept here for a future release-gate/CI step, NOT applied by the reporter.",
+  "default": {
+    "minPassRate": 85,
+    "maxCriticalFailures": 2,
+    "maxTestDuration_ms": 60000,
+    "criticalTcPassRate": 100,
+    "maxOpenP1Defects": 0
+  },
+  "release": {
+    "minPassRate": 95,
+    "maxCriticalFailures": 0,
+    "maxTestDuration_ms": 60000,
+    "criticalTcPassRate": 100,
+    "maxOpenP1Defects": 0,
+    "maxOpenP2Defects": 0
+  },
+  "feature": {
+    "minPassRate": 85,
+    "maxCriticalFailures": 2,
+    "maxTestDuration_ms": 60000,
+    "criticalTcPassRate": 100,
+    "maxOpenP1Defects": 0
+  }
+}

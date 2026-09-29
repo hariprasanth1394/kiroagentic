@@ -1,0 +1,65 @@
+{
+  "id": "execution.schema.json",
+  "draft": "draft-07",
+  "title": "Execution Result Contract",
+  "description": "Machine-validated output of the Execution Agent. Consumed by Reporter Agent.",
+  "type": "object",
+  "required": ["pipelineRunId", "timestamp", "platform", "baseUrl", "summary", "results"],
+  "properties": {
+    "pipelineRunId": { "type": "string", "pattern": "^run_\\d{8}_\\d{6}$" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "platform": { "type": "string", "enum": ["HyperExecute", "Local", "None"] },
+    "dashboardUrl": { "type": ["string", "null"] },
+    "baseUrl": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["total", "passed", "failed", "skipped", "duration_ms"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["testCaseId", "title", "status", "duration_ms", "retries", "retriedAndPassed"],
+        "properties": {
+          "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "title": { "type": "string" },
+          "status": { "type": "string", "enum": ["passed", "failed", "broken", "skipped", "not_executed"], "description": "'broken' = an exception/thrown error (allure 'broken'); reporter/defect treat broken the same as failed for pass-rate. result-parsing.md may also collapse broken→failed — both are accepted downstream." },
+          "duration_ms": { "type": "integer", "minimum": 0 },
+          "retries": { "type": "integer", "minimum": 0 },
+          "retriedAndPassed": { "type": "boolean" },
+          "errorMessage": { "type": ["string", "null"] },
+          "skipReason": { "type": ["string", "null"] },
+          "artifactPaths": {
+            "type": "object",
+            "properties": {
+              "screenshot": { "type": ["string", "null"] },
+              "video": { "type": ["string", "null"] },
+              "trace": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "selfHealAttempts": { "type": "integer", "minimum": 0 },
+    "selfHealFixes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "issue", "fix"],
+        "properties": {
+          "file": { "type": "string" },
+          "issue": { "type": "string" },
+          "fix": { "type": "string" }
+        }
+      }
+    },
+    "error": { "type": ["string", "null"] }
+  }
+}

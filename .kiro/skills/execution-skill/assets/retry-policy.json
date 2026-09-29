@@ -1,0 +1,28 @@
+{
+  "description": "Retry and resilience rules for test execution and JIRA operations.",
+  "version": "1.0.0",
+  "testExecution": {
+    "playwrightRetries": 1,
+    "retryReason": "Transient CDN/WAF 403 errors from cloud datacenter IPs",
+    "hyperExecuteRetryOnFailure": true,
+    "hyperExecuteMaxRetries": 1,
+    "taskTimeout": 600,
+    "flakyDetection": "Test that passes on retry is marked flaky, not passed"
+  },
+  "jira": {
+    "maxAttempts": 2,
+    "batchSize": 5,
+    "pauseBetweenBatches": "natural (no explicit sleep, sequential processing)",
+    "onDoubleFailure": {
+      "action": "Do NOT fabricate keys/transitions. Record 'JIRA pending' in the skill's own output artifact.",
+      "notify": "Inform user of JIRA connectivity issue"
+    },
+    "healthCheck": "Make lightweight getJiraIssue call before batched operations"
+  },
+  "_note": "No gitClone block: the execution skill runs the LOCAL unified regression-suite via hyperexecute.exe. It never clones a git repo. Generated code lives at qe-pipeline/output/regression-suite/. (Git push of generated scripts, if ever enabled, is a separate concern under pipeline-config.json → gitlab.scriptRepo, not an execution retry path.)",
+  "apiCalls": {
+    "maxAttempts": 3,
+    "backoffMs": [1000, 3000, 10000],
+    "retryableStatuses": [429, 500, 502, 503, 504]
+  }
+}

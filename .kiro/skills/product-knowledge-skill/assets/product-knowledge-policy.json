@@ -1,0 +1,161 @@
+{
+  "description": "Rules for the Product Knowledge Skill. Governs how application pages, workflows, navigation and business rules are discovered from the live Playwright browser and persisted to the Product Knowledge Base (PKB). The skill reads this at runtime instead of hardcoding rules.",
+  "version": "2.0.0",
+  "role": "product-knowledge-skill",
+  "pipelinePosition": "First agent in the documentation pipeline. Output is consumed by the QE Planner as primary business context before any JIRA story analysis.",
+
+  "inputs": {
+    "allowed": [
+      "Current Playwright browser (primary discovery source)",
+      "Current DOM snapshot",
+      "Browser URL",
+      "Browser screenshot",
+      "Existing Product Knowledge Base at the resolved per-app {pkbDir}",
+      "User navigation performed during this execution",
+      "Resolved per-app env config (appUrl only)",
+      "App registry entry pipeline-config.json → apps[appKey] (for pkbDir/envConfig resolution)"
+    ],
+    "forbidden": [
+      "JIRA stories",
+      "Backend/source code internals",
+      "Assumed or undocumented behaviour"
+    ]
+  },
+
+  "outputs": {
+    "perApp": true,
+    "baseDir": "{pkbDir}",
+    "baseDirResolution": "{pkbDir} = pipeline-config.json → apps[appKey].pkbDir (e.g. qe-pipeline/knowledge/product-TCOE). Isolated per app, mirroring suiteDir/envConfig. If an app entry has no pkbDir, default to qe-pipeline/knowledge/product-{appKey} and write it back into the entry.",
+    "locations": {
+      "screen": "{pkbDir}/screens/{page}.md",
+      "workflow": "{pkbDir}/workflows/{workflow}.md",
+      "businessRules": "{pkbDir}/business-rules.md",
+      "navigationMap": "{pkbDir}/navigation-map.md",
+      "productOverview": "{pkbDir}/product-overview.md"
+    },
+    "forbidden": "Never create documentation outside the resolved {pkbDir} for the app being documented. Never write into another app's PKB or the bare qe-pipeline/knowledge/product/. No JIRA writes, no test cases, no automation code."
+  },
+
+  "mcp": {
+    "requires": ["playwright"],
+    "enableInStep0": ["playwright"],
+    "disableInFinalStep": ["playwright"],
+    "ifUnavailable": "HALT and report the dependency. Never fabricate DOM, URLs, navigation, or screenshots."
+  },
+
+  "naming": {
+    "screenFile": {
+      "format": "{page}.md",
+      "convention": "kebab-case derived from route or page name",
+      "regex": "^[a-z][a-z0-9-]+\\.md$",
+      "example": "wizard-test-location.md"
+    },
+    "workflowFile": {
+      "format": "{workflow}.md",
+      "convention": "kebab-case describing the end-to-end flow",
+      "regex": "^[a-z][a-z0-9-]+\\.md$",
+      "example": "offline-booking-flow.md"
+    }
+  },
+
+  "requiredSections": {
+    "screen": [
+      "Purpose",
+      "Page Details (Page Name, Module, URL, Title)",
+      "Entry Conditions",
+      "Exit Conditions",
+      "Main Components",
+      "User Actions",
+      "Business Rules",
+      "Dependencies",
+      "Navigation",
+      "Validation Rules",
+      "Known Limitations",
+      "Regression Impact",
+      "Confidence"
+    ],
+    "workflow": [
+      "Purpose",
+      "Start Page",
+      "End Page",
+      "Navigation Flow",
+      "Business Rules",
+      "Dependencies",
+      "Failure Points",
+      "Regression Impact"
+    ]
+  },
+
+  "evidence": {
+    "required": true,
+    "principle": "Evidence-first. Document only what is directly observable in the live browser.",
+    "validSources": ["playwright-mcp", "browser-snapshot", "browser-devtools", "browser-screenshot", "browser-url"],
+    "rules": [
+      "No component documented without it being present in the DOM snapshot or screenshot",
+      "No URL recorded without confirming it via the browser address",
+      "No navigation path recorded without observing the transition",
+      "Do not infer backend logic, API contracts, DB tables, or status codes",
+      "Follow .kiro/steering/anti-hallucination.md for all placeholder and evidence rules"
+    ]
+  },
+
+  "confidence": {
+    "required": true,
+    "allowedValues": ["High", "Medium", "Low", "Unknown"],
+    "guidance": {
+      "High": "Directly observed in the live browser during this session",
+      "Medium": "Observed but partially inferred (e.g. next step implied by text)",
+      "Low": "Downstream or dependent behaviour not yet directly observed",
+      "Unknown": "Cannot be verified — must be labelled Unknown, never guessed"
+    },
+    "rule": "Every screen and workflow document must end with a Confidence section. Inferred content must be tagged (e.g. 'inferred from URL pattern')."
+  },
+
+  "merge": {
+    "strategy": "read-compare-append",
+    "rules": [
+      "Always read the existing document before writing",
+      "Append only new information",
+      "Remove duplicate entries",
+      "Never overwrite manually maintained content",
+      "Never regenerate the complete PKB",
+      "Update only modified files"
+    ]
+  },
+
+  "navigation": {
+    "rules": [
+      "Record only newly discovered navigation paths",
+      "Do not duplicate existing paths",
+      "Mark inferred routes explicitly (e.g. 'Unknown (inferred from URL pattern)')",
+      "Update Last Updated stamp in navigation-map.md when routes change"
+    ]
+  },
+
+  "stopConditions": [
+    { "condition": "Playwright MCP or browser unavailable", "action": "HALT and report dependency" },
+    { "condition": "Current page cannot be identified", "action": "Stop and request user navigation" },
+    { "condition": "Information cannot be verified", "action": "Mark as Unknown — do not invent" }
+  ],
+
+  "prohibitions": [
+    "Generate test cases",
+    "Generate automation scripts",
+    "Modify JIRA",
+    "Assume undocumented behaviour"
+  ],
+
+  "summaryFormat": {
+    "returnOnly": [
+      "Pages Analysed",
+      "Files Created",
+      "Files Updated",
+      "Workflow Updated",
+      "Business Rules Added",
+      "Navigation Changes",
+      "Warnings",
+      "Confidence"
+    ],
+    "rule": "Do not print complete documentation in chat unless the user requests it."
+  }
+}

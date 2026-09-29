@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Pre-HyperExecute Validation",
+      "description": "Policy-driven preflight check that runs ONLY when a command actually launches HyperExecute. Scoped to shell tools; no-ops for every other command so it never blocks ordinary reads/edits.",
+      "trigger": "PreToolUse",
+      "matcher": "^(execute_pwsh|control_pwsh_process)$",
+      "action": {
+        "type": "agent",
+        "prompt": "A shell command is about to run. FIRST decide whether it actually launches a HyperExecute job.\n\nInspect the tool input command string:\n- If it invokes the HyperExecute binary (contains 'hyperexecute.exe' or 'hyperexecute ' with a '--config' flag) → this IS a HyperExecute run. Proceed to validation below.\n- Otherwise (any other command — ls, git, npm, tsc, playwright, file ops, etc.) → this is NOT a HyperExecute run. Do NOTHING and allow the command. Exit 0 immediately.\n\nValidation (ONLY when it is a HyperExecute run):\n1. Read .kiro/skills/execution-skill/assets/hyperexecute-policy.json\n2. Execute each check listed in the preflightChecks[] array (spec files exist; test count > 0; no duplicate TC-IDs; all spec imports resolve to fixtures/ only — never @playwright/test or a lambdatest-setup module; LT_CDP_URL present in the YAML env block or the run would silently use a local browser; tunnel enabled; credentials loaded from .env; stale artifacts cleaned).\n3. If ANY check fails → BLOCK execution (exit 2) and list which checks failed.\n4. If ALL checks pass → allow the command.\n\nDo NOT invent checks. Only apply what hyperexecute-policy.json specifies in preflightChecks[]. Never block a non-HyperExecute command."
+      },
+      "enabled": false
+    }
+  ]
+}

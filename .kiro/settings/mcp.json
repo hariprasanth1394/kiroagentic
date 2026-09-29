@@ -1,0 +1,87 @@
+﻿{
+    "mcpServers":  {
+                       "power-figma-figma":  {
+                                                 "type":  "http",
+                                                 "url":  "https://mcp.figma.com/mcp",
+                                                 "autoApprove":  [
+                                                                     "get_screenshot"
+                                                                 ],
+                                                 "disabled":  true
+                                             },
+                       "playwright":  {
+                                          "command":  "npx",
+                                          "args":  [
+                                                       "@playwright/mcp@latest"
+                                                   ],
+                                          "disabled":  true,
+                                          "autoApprove":  [
+                                                              "browser_navigate",
+                                                              "browser_screenshot",
+                                                              "browser_click",
+                                                              "browser_type",
+                                                              "browser_get_text",
+                                                              "browser_get_html",
+                                                              "browser_wait",
+                                                              "browser_select",
+                                                              "browser_hover",
+                                                              "browser_evaluate",
+                                                              "browser_snapshot"
+                                                          ],
+                                          "disabledTools":  [
+
+                                                            ]
+                                      },
+                       "jira":  {
+                                    "command":  "npx",
+                                    "args":  [
+                                                 "mcp-remote",
+                                                 "https://mcp.atlassian.com/v1/mcp"
+                                             ],
+                                    "autoApprove":  [
+                                                        "getAccessibleAtlassianResources",
+                                                        "getJiraIssue",
+                                                        "fetch",
+                                                        "search",
+                                                        "getVisibleJiraProjects",
+                                                        "createJiraIssue",
+                                                        "atlassianUserInfo",
+                                                        "searchConfluenceUsingCql",
+                                                        "getConfluencePage",
+                                                        "updateConfluencePage",
+                                                        "editJiraIssue",
+                                                        "addCommentToJiraIssue",
+                                                        "transitionJiraIssue",
+                                                        "searchJiraIssuesUsingJql",
+                                                        "createIssueLink",
+                                                        "getTransitionsForJiraIssue",
+                                                        "getIssueLinkTypes"
+                                                    ],
+                                    "disabled":  true
+                                },
+                       "gitlab-mr-reviewer":  {
+                                                  "command":  "node",
+                                                  "disabled":  true,
+                                                  "timeout":  60000,
+                                                  "args":  [
+                                                               "C:\\Users\\guruprasad.reddy\\Kiro_QE_Native\\gitlab-mcp\\index.js"
+                                                           ],
+                                                  "env":  {
+                                                              "GITLAB_URL":  "https://gitlab.com",
+                                                              "GITLAB_ACCESS_TOKEN":  "glpat-opTpCO0zzBHYUkfFh4ao7GM6MQpvOjEKdTpteGxiMg8.01.170yoaayh"
+                                                          },
+                                                  "autoApprove":  [
+                                                                      "search_repositories",
+                                                                      "get_merge_request",
+                                                                      "get_merge_request_changes",
+                                                                      "list_open_merge_requests",
+                                                                      "get_merge_request_discussions",
+                                                                      "add_merge_request_note",
+                                                                      "create_branch",
+                                                                      "create_merge_request",
+                                                                      "commit_files",
+                                                                      "get_file_content",
+                                                                      "get_pipeline_status"
+                                                                  ]
+                                              }
+                   }
+}

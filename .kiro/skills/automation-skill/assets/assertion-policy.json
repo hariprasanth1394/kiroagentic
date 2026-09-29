@@ -1,0 +1,37 @@
+{
+  "description": "Assertion strategy for test generation. Defines what constitutes a valid assertion and banned patterns.",
+  "version": "1.0.0",
+  "rules": {
+    "minimumPerTest": 1,
+    "preferredLibrary": "@playwright/test expect()",
+    "style": "Specific and descriptive. Assert observable state, not implementation."
+  },
+  "preferred": [
+    "expect(locator).toBeVisible()",
+    "expect(locator).toHaveText()",
+    "expect(locator).toHaveAttribute()",
+    "expect(locator).toHaveCount()",
+    "expect(locator).toContainText()",
+    "expect(page).toHaveURL()",
+    "expect(page).toHaveTitle()",
+    "expect(response.status()).toBe()"
+  ],
+  "banned": [
+    "expect(true).toBe(true)",
+    "expect(false).toBe(false)",
+    "expect(value).toBeTruthy() without meaningful value",
+    "expect(element).not.toBeNull() as sole assertion"
+  ],
+  "guidelines": {
+    "ui": "Assert visible state the user would observe (text, visibility, URL change)",
+    "api": "Assert status code + response body shape + key field values (service methods return parsed results; assert in the flow/test, not inside the service)",
+    "hybrid": "For a flow that spans UI and API: assert the UI outcome the user sees AND the backing API/backend state (e.g. UI shows created item AND service GET returns it). Cross-check the two sides — a UI-only pass that the backend contradicts is not a real pass.",
+    "journey": "A cross-feature journey asserts the end-to-end business outcome (final state) plus that each composed flow produced the data the next consumed. Assert at the test level on the journey result, not inside the journey.",
+    "negative": "Negative tests must assert specific error message or state, not just 'something failed'"
+  },
+  "softAssertions": {
+    "when": "Only for non-critical visual checks within a single test",
+    "syntax": "expect.soft(locator)",
+    "limit": "Max 3 soft assertions per test before hard assertion"
+  }
+}

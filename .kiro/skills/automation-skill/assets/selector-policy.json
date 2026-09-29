@@ -1,0 +1,94 @@
+{
+  "description": "Selector strategy for Playwright test generation. Automation Agent reads this to decide how to locate elements.",
+  "version": "2.0.0",
+  "strategy": "evidence-first",
+  "priorityOrder": [
+    "data-testid",
+    "aria-label",
+    "role",
+    "placeholder",
+    "text",
+    "css"
+  ],
+  "evidence": {
+    "required": true,
+    "fields": ["source", "count", "verifiedBy"],
+    "validSources": ["playwright-mcp", "browser-devtools", "page-snapshot"],
+    "countMustEqual": 1,
+    "verificationRequired": {
+      "rule": "count MUST be a MEASURED value returned by actually executing the locator against the live DOM — NEVER a value typed/assumed by the agent. Before recording evidence, run the selector and read back the real match count.",
+      "howToMeasure": [
+        "Playwright MCP: run `browser_evaluate` with `document.querySelectorAll('<css-equivalent>').length`, OR for getBy* locators evaluate the equivalent DOM query and read `.length`.",
+        "Local dry-run: `await page.locator(<selector>).count()` and read the returned integer.",
+        "The number written into evidence.count is the number the tool RETURNED — if the tool was not run, there is NO evidence and the selector is rejected."
+      ],
+      "verifiedByField": "evidence.verifiedBy records HOW count was measured: 'browser_evaluate' | 'locator.count()' | 'page-snapshot-match'. A missing or 'assumed'/'manual' verifiedBy = unverified = rejected.",
+      "antiHallucination": "Writing count:1 without having executed the locator is a hard violation (self-reported evidence). The measured count is the single source of truth — the schema value only mirrors what the tool returned."
+    }
+  },
+  "banned": {
+    "selectors": [
+      "[cursor=pointer]",
+      "[class*=",
+      "body.innerText",
+      ".first()"
+    ],
+    "patterns": [
+      "comma-separated selectors (multiple selectors in one string)",
+      "wildcard class matchers"
+    ]
+  },
+  "pageObjectRules": {
+    "maxSelectorsPerPage": 30,
+    "selectorsMustBeConst": true,
+    "namingConvention": "camelCase descriptive (e.g. submitButton, emailInput)"
+  },
+  "fallbackStrategy": {
+    "enabled": true,
+    "selectorsPerElement": 3,
+    "approach": "Generate primary + up to 2 fallback selectors per element upfront, chained with Playwright .or() at runtime. EVERY selector in the chain — primary AND each fallback — must be independently verified against the live DOM at generation time with its own evidence (source + count === 1). An unverified fallback is a guess, not a fallback, and is banned.",
+    "evidenceForEveryLink": {
+      "required": true,
+      "rule": "Each selector placed in a .or() chain MUST have been discovered via DOM inspection and resolve to exactly ONE element (count === 1) at generation time. Record evidence per selector in the manifest locator entry.",
+      "rationale": ".or() binds to the FIRST matching selector. If a fallback is unverified or non-unique, the chain can silently bind to the WRONG element and report a false pass. Every link must be as proven as the primary.",
+      "banned": "Selectors added 'from memory' or 'by common pattern' as fallbacks without DOM evidence. If you cannot verify a fallback resolves to count === 1, do NOT add it."
+    },
+    "implementation": "For each interactive element, discover 2-3 real selectors from the DOM (each unique). Chain the top two with .or() in the Page Object; the third stays as an evidence-tagged comment. All are backed by discovery evidence — none invented.",
+    "example": {
+      "element": "Submit button",
+      "selectors": [
+        { "selector": "page.getByTestId('submit-btn')", "evidence": { "source": "playwright-mcp", "count": 1, "verifiedBy": "browser_evaluate" } },
+        { "selector": "page.getByRole('button', { name: 'Submit' })", "evidence": { "source": "playwright-mcp", "count": 1, "verifiedBy": "browser_evaluate" } },
+        { "selector": "page.locator('#form-submit')", "evidence": { "source": "playwright-mcp", "count": 1, "verifiedBy": "browser_evaluate" } }
+      ],
+      "pageObjectPattern": "readonly submitButton = this.page.getByTestId('submit-btn').or(this.page.getByRole('button', { name: 'Submit' }))"
+    },
+    "rules": [
+      "Generate at least 2 evidence-backed selectors per interactive element (each verified count === 1)",
+      "Use .or() to chain primary and first fallback in the Page Object",
+      "Third selector stays as an evidence-tagged comment for manual fix if both fail",
+      "Runtime preference: an evidence-backed fallback in the chain is used automatically by .or() — cheap, no MCP call, and SAFE because it was verified at generation time",
+      "Escalate to DOM re-inspection (Playwright MCP) ONLY when the ENTIRE evidence-backed chain fails (element genuinely moved/removed) — that is the one case where the MCP cost is justified"
+    ],
+    "runtimeVsGeneration": {
+      "generationTime": "Every selector (primary + fallbacks) is verified count === 1 against the live DOM before being committed. No unverified selector enters a chain.",
+      "runtime": "Prefer the evidence-backed .or() chain (no MCP needed — cheaper than a browser round-trip). Only when ALL links in the chain fail do you re-inspect the DOM with MCP and regenerate the selector with fresh evidence."
+    },
+    "instabilitySurfacing": {
+      "rule": "If, during local validation, the primary selector fails and the run only passes because a fallback caught it, the element's primary is UNSTABLE. Do NOT hide this.",
+      "action": "Record the element in the manifest validation.needsReview[] (or an unstableSelectors[] note) with reason 'primary selector failed; passed on fallback — primary needs re-inspection', so drift surfaces instead of silently accumulating rot.",
+      "neverSilent": "A test that only passed because of a fallback is a yellow signal, never a clean green."
+    },
+    "dryRunFailureHandling": {
+      "step1": "Check if an evidence-backed fallback from the chain resolves (no MCP needed — it was verified at generation time).",
+      "step2": "If a fallback works, promote it to primary in the Page Object AND flag the element as unstable (instabilitySurfacing).",
+      "step3": "Re-run dry run.",
+      "step4": "If the ENTIRE evidence-backed chain fails, re-inspect the DOM with Playwright MCP, regenerate the selector(s) with fresh count === 1 evidence, and update the Page Object."
+    },
+    "massSelectorFailureRecovery": {
+      "trigger": "A large fraction of tests in the run fail with 'locator resolved to 0 elements' / 'strict mode violation' (page changed wholesale, not one selector).",
+      "action": "Do NOT patch selectors one by one and do NOT rely on grid autoHeal. Route back to the Automation skill to RE-INSPECT the affected pages with Playwright MCP and REGENERATE the Page Objects with fresh evidence. This writes real, evidence-backed fixes to disk (persistent), unlike a runtime heal.",
+      "autoHeal": "Grid-level autoHeal stays DISABLED (it does not modify the script, produces no evidence, and reports a silent pass). Recovery is always via evidence-based regeneration."
+    }
+  }
+}

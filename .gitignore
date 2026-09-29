@@ -1,0 +1,65 @@
+# ============================================
+# SECRETS — Never commit
+# ============================================
+.env
+qe-pipeline/.env
+
+# ============================================
+# BINARIES — Platform-specific, download fresh
+# ============================================
+hyperexecute.exe
+hyperexecute
+LT.exe
+.hyperexecute.exe.old
+
+# ============================================
+# NODE MODULES — Install fresh per machine
+# ============================================
+node_modules/
+**/node_modules/
+**/package-lock.json
+
+# ============================================
+# PIPELINE OUTPUT — Regenerated each run
+# ============================================
+output/
+
+# ============================================
+# HYPEREXECUTE ARTIFACTS — Local execution junk
+# ============================================
+.hyperexecute/
+hyperexecute-cli.log
+hyperexecute-code-*.zip
+.updatedhyperexecute.yaml
+artifacts/
+test-results/
+playwright-report/
+allure-results/
+allure-report/
+
+# ============================================
+# PLAYWRIGHT MCP — Browser session logs
+# ============================================
+.playwright-mcp/
+
+# ============================================
+# TUNNEL LOGS
+# ============================================
+lt.log
+
+# ============================================
+# OS / IDE / TEMP
+# ============================================
+Thumbs.db
+.DS_Store
+.vscode/
+*.swp
+*.log
+
+# ============================================
+# LARGE/UNRELATED FILES
+# ============================================
+*.docx
+*.exe
+gitlab-mcp/node_modules/
+docs/

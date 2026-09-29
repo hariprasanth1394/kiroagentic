@@ -1,0 +1,38 @@
+{
+  "description": "JIRA integration rules. All agents that touch JIRA read this for consistent behaviour. SHARED policy: keep identical copies in sync across tester-skill, defect-skill, and retest-skill assets/.",
+  "version": "1.0.0",
+  "connection": {
+    "cloudId": "Read from pipeline-config.json -> jira.cloudId",
+    "projectKey": "DERIVED at runtime from the story key (storyKey.split('-')[0], e.g. BREW-94 -> BREW). NOT a field in pipeline-config.json — never look it up there."
+  },
+  "issueTypes": {
+    "test": "Test",
+    "testSet": "Test Set",
+    "testExecution": "Test Execution",
+    "bug": "Bug",
+    "task": "Task"
+  },
+  "labels": {
+    "always": ["qe-pipeline-generated"],
+    "perStory": ["{STORY-KEY}"],
+    "perDimension": ["{dimension label: ui, api, etc}"]
+  },
+  "linking": {
+    "testRelationship": "Test",
+    "bugRelationship": "Relates"
+  },
+  "comments": {
+    "maxCharacters": 2000,
+    "format": "Structured markdown with metrics summary"
+  },
+  "deduplication": {
+    "strategy": "Search by TC-ID in summary field before creating",
+    "ifFound": "Add comment to existing issue",
+    "ifNotFound": "Create new issue"
+  },
+  "resilience": {
+    "healthCheckBefore": "Make lightweight getJiraIssue call before batched operations",
+    "batchSize": 5,
+    "onDoubleFailure": "Do NOT fabricate keys or transitions. Record the pending JIRA work in the skill's own output (test-cases.json / defect-summary.json / retest-summary.json) with status 'JIRA pending' and log ❌ in the human summary, then inform the user. (There is no separate jira-updates-pending.json file — the skill's normal output IS the record of pending work.)"
+  }
+}

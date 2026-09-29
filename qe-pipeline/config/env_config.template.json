@@ -1,0 +1,26 @@
+{
+  "description": "TEMPLATE per-app environment config. Copy to env_config.{APP}.json (e.g. env_config.BREW.json), register the file name in pipeline-config.json → apps.{APP}.envConfig, and fill in the values. NEVER hardcode credentials here — reference environment variables only.",
+  "app": "{APP_KEY}",
+  "environment": "{stage | sit | uat | dev | production}",
+  "appUrl": "",
+  "apiBaseUrl": "",
+  "_urlNotes": "appUrl = browser base URL for UI stories (Planner writes it). apiBaseUrl = base URL for API-only stories. At least one must be set before Scripting (URL gate).",
+  "credentials": {
+    "note": "DO NOT hardcode credentials. Reference environment variables (loaded from qe-pipeline/.env) by name only.",
+    "lambdatest": {
+      "usernameEnvVar": "LT_USERNAME",
+      "accessKeyEnvVar": "LT_ACCESS_KEY"
+    },
+    "testUser": {
+      "usernameEnvVar": "TEST_USERNAME",
+      "passwordEnvVar": "TEST_PASSWORD"
+    }
+  },
+  "tunnel": {
+    "enabled": true,
+    "name": "{TUNNEL_NAME}"
+  },
+  "endpoints": {
+    "_doc": "Optional. Named API endpoint paths this app's tests hit, used by the execution health check to probe the SPECIFIC endpoint (not just the host). Example: \"getUser\": \"/v1/users/{id}\"."
+  }
+}

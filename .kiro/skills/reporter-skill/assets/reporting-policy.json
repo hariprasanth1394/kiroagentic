@@ -1,0 +1,63 @@
+{
+  "description": "Reporting policy for QE Framework v4. Governs quality gate evaluation, JIRA comment posting, and pipeline health knowledge updates.",
+  "version": "3.0.0",
+  "outputs": {
+    "qualityGateJson": { "required": true, "purpose": "Machine-readable gate result for downstream agents" }
+  },
+  "outputSchemas": {
+    "qualityGate": {
+      "status": "PASSED | FAILED | NOT_EVALUATED",
+      "evaluatedAt": "ISO-8601",
+      "pipelineRunId": "from execution_result",
+      "platform": "from execution_result",
+      "baseUrl": "from execution_result",
+      "dashboardUrl": "from execution_result or null",
+      "metrics": {
+        "passRate": "float",
+        "criticalFailures": "integer",
+        "totalTests": "integer",
+        "passed": "integer",
+        "failed": "integer",
+        "skipped": "integer",
+        "flaky": "integer",
+        "totalDuration_ms": "integer",
+        "avgTestDuration_ms": "integer"
+      },
+      "thresholds": { "minPassRate": 85, "maxCriticalFailures": 2, "maxTestDuration_ms": 60000 },
+      "failureCategories": {
+        "productDefect": "integer",
+        "environmentIssue": "integer",
+        "testScriptError": "integer",
+        "flakyTest": "integer"
+      },
+      "recommendations": ["array of strings"]
+    }
+  },
+  "recommendations": {
+    "passRateBelow85": "Investigate failure root causes before release",
+    "criticalFailuresExceeded": "Block release until critical issues resolved",
+    "flakyTestsDetected": "Stabilize flaky tests: review wait strategies and selectors",
+    "avgDurationOver30s": "Optimize slow tests for faster feedback",
+    "environmentIssuesFound": "Verify test environment stability before next run",
+    "scriptErrorsFound": "Fix broken test scripts: update selectors or test logic",
+    "allPassed": "Quality gate passed — ready for release consideration"
+  },
+  "jiraComment": {
+    "maxCharacters": 2000,
+    "template": "**QE Pipeline Results — {KEY}**\n\n**Quality Gate: {status}** | Pass Rate: {passRate}%\n- Total: {total} | Passed: {passed} | Failed: {failed} | Flaky: {flaky}\n- Product Defects: {productDefect} | Env Issues: {envIssue} | Script Errors: {scriptError}\n- Duration: {duration}s | Platform: HyperExecute\n\nDashboard: {url}",
+    "mustInclude": ["pass rate", "total tests", "failed count", "gate status", "job link"]
+  },
+  "metricsCalculation": {
+    "passRate": "passed / (passed + failed) * 100",
+    "exclude": ["skipped", "not_executed"],
+    "environmentIssues": "Count as failures"
+  },
+  "knowledgeUpdate": {
+    "procedure": "After all JIRA operations: read knowledge file → append entry → write back. Never overwrite.",
+    "pipelineHealth": {
+      "file": "qe-pipeline/knowledge/pipeline-health.json",
+      "appendTo": "runs[]",
+      "fields": ["runId", "date", "type", "storyKey", "environment", "jobId", "jobLink", "totalTests", "passed", "failed", "skipped", "flaky", "passRate", "durationMs", "gateStatus"]
+    }
+  }
+}

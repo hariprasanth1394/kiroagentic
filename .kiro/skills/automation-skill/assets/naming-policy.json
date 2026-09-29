@@ -1,0 +1,155 @@
+{
+  "description": "Naming conventions OWNED BY the automation skill: regression-suite layer files, registry files, and the feature git branch. Not shared — each skill holds only the naming rules it produces.",
+  "version": "3.1.0",
+  "_pathNote": "Every 'regression-suite/...' location below means the PER-APP suite resolved in SKILL Step 0 from pipeline-config.json → apps[appKey].suiteDir (e.g. qe-pipeline/output/regression-suite-BREW/). Suites are isolated per app; there is no single shared regression-suite/.",
+  "patterns": {
+    "gitBranch": {
+      "format": "feature/{STORY-KEY}",
+      "regex": "^feature/[A-Z]+-\\d+$",
+      "example": "feature/TCOE-147"
+    },
+    "capabilityId": {
+      "format": "{APP}-{DOMAIN}-{VERB}",
+      "regex": "^[A-Z][A-Z0-9]*-[A-Z0-9]+(-[A-Z0-9]+)+$",
+      "example": "APP-ORDER-CREATE, APP-USER-VALIDATE-EMAIL",
+      "rules": [
+        "APP = the resolved app key (story prefix, e.g. BREW/TCOE) — app-agnostic; never hardcode a specific app",
+        "DOMAIN = the business domain in UPPER-KEBAB (from the app's domain map / @domain tag)",
+        "VERB = the capability action in UPPER-KEBAB (CREATE, VALIDATE, SEARCH, VALIDATE-EMAIL, ...)",
+        "Stable, human-readable business identity for a reusable flow/service method",
+        "One capability ID maps to exactly one implementation {file, method} in service-catalog/flow entries",
+        "Reused across stories — the AI searches by capability ID before generating a new method"
+      ]
+    },
+    "scenarioId": {
+      "format": "{APP}-{DOMAIN}-{NNN}",
+      "regex": "^[A-Z][A-Z0-9]*-[A-Z0-9]+-\\d{3}$",
+      "example": "APP-ORDER-001",
+      "rules": [
+        "Business scenario identity in scenario-catalog.json",
+        "Composes one or more capability IDs",
+        "app-agnostic — APP is resolved at runtime"
+      ]
+    }
+  },
+  "layers": {
+    "tests": {
+      "format": "{feature}.spec.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.spec\\.ts$",
+      "example": "place-order.spec.ts",
+      "location": "regression-suite/tests/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Feature name uses kebab-case (may include domain prefix for readability, e.g. checkout-place-order.spec.ts)",
+        "Domain is expressed via the @domain tag, not a folder",
+        "Extension must be .spec.ts"
+      ]
+    },
+    "fixtures": {
+      "format": "{domain}.fixture.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.fixture\\.ts$",
+      "example": "checkout.fixture.ts",
+      "location": "regression-suite/fixtures/",
+      "rules": [
+        "One fixture per domain",
+        "Name matches the domain it serves",
+        "Extension must be .fixture.ts"
+      ]
+    },
+    "journeys": {
+      "format": "{journey-name}.journey.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.journey\\.ts$",
+      "example": "signup-to-first-order.journey.ts",
+      "location": "regression-suite/journeys/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case describing the cross-feature path",
+        "Composes MULTIPLE flows; contains no pages/services/locators",
+        "Extension must be .journey.ts"
+      ]
+    },
+    "flows": {
+      "format": "{journey}.flow.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.flow\\.ts$",
+      "example": "place-order.flow.ts",
+      "location": "regression-suite/flows/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Journey name uses kebab-case (may include domain prefix for readability, e.g. checkout-place-order.flow.ts)",
+        "Single-domain capability; may compose a page (UI) and/or a service (API)",
+        "Extension must be .flow.ts"
+      ]
+    },
+    "services": {
+      "format": "{name}.service.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.service\\.ts$",
+      "example": "order.service.ts",
+      "location": "regression-suite/services/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case describing the API area (API counterpart of a page)",
+        "Built on core ApiClient; no UI locators",
+        "Extension must be .service.ts"
+      ]
+    },
+    "pages": {
+      "format": "{page-name}.page.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.page\\.ts$",
+      "example": "checkout-page.page.ts",
+      "location": "regression-suite/pages/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case",
+        "Extension must be .page.ts"
+      ]
+    },
+    "components": {
+      "format": "{widget-name}.component.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.component\\.ts$",
+      "example": "date-picker.component.ts",
+      "location": "regression-suite/components/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case describing the widget",
+        "Extension must be .component.ts"
+      ]
+    },
+    "data": {
+      "format": "{name}.data.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.data\\.ts$",
+      "example": "order.data.ts",
+      "location": "regression-suite/data/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case describing the data area (usually matches a domain)",
+        "Exports typed constants + variations only — no logic/locators/API calls",
+        "Variations are entries passed into flow/service methods as params (never per-variant methods)",
+        "Extension must be .data.ts"
+      ]
+    },
+    "core": {
+      "format": "{module-name}.ts",
+      "regex": "^[a-z][a-z0-9-]+\\.ts$",
+      "example": "base-page.ts",
+      "location": "regression-suite/core/",
+      "rules": [
+        "Flat directory, no subdirectories",
+        "Name uses kebab-case",
+        "Plain .ts extension (no layer suffix)"
+      ]
+    }
+  },
+  "registry": {
+    "location": "regression-suite/registry/",
+    "files": {
+      "flow-catalog.json": { "description": "Maps flow names to file paths, associated domains, composed pages/services, and the capability IDs the flow implements" },
+      "journey-catalog.json": { "description": "Maps journey names to file paths and the ordered flows they compose (cross-feature)" },
+      "service-catalog.json": { "description": "Maps service names to file paths and the API capability IDs (with method) they implement" },
+      "page-catalog.json": { "description": "Maps page object names to file paths and owned locators" },
+      "component-catalog.json": { "description": "Maps component names to file paths and widget types" },
+      "fixture-catalog.json": { "description": "Maps fixture names to providers and injected dependencies" },
+      "scenario-catalog.json": { "description": "Maps business scenario IDs to the capability IDs they compose (business scenario -> capabilities -> implementation)" },
+      "domain-index.json": { "description": "Maps domain tags to associated tests, flows, journeys, and stories" }
+    }
+  }
+}

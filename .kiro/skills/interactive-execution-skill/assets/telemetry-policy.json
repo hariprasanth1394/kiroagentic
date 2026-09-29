@@ -1,0 +1,57 @@
+{
+  "description": "Lightweight token/context telemetry for the interactive execution path. Provider token counts are NOT available in this environment; record byte/char/count PROXIES and label them clearly as proxies. Never fabricate provider token numbers.",
+  "version": "1.0.0",
+  "role": "interactive-execution-skill",
+  "proxyDisclaimer": "All 'token' figures are proxies computed as ceil(bytes/4) unless a real provider count is supplied. Always label them 'proxy'.",
+
+  "metricsPerRun": {
+    "llmCallCount": "integer",
+    "mcpCallCount": "integer",
+    "byCategory": {
+      "DIRECT_EXECUTION": "integer",
+      "TARGETED_DISCOVERY": "integer",
+      "SCOPED_DISCOVERY": "integer",
+      "FULL_DISCOVERY": "integer",
+      "FAILURE_INVESTIGATION": "integer"
+    },
+    "browserSnapshotCount": "integer",
+    "browserEvaluateCount": "integer",
+    "snapshotResponseBytes": "integer",
+    "evaluateResponseBytes": "integer",
+    "plbReadCount": "integer",
+    "plbReadBytes": "integer",
+    "testcaseContextBytes": "integer",
+    "repeatedContentBytes": "integer (bytes of snapshots identical to a prior snapshot in the run)",
+    "repeatedContentRatio": "repeatedContentBytes / snapshotResponseBytes",
+    "screenshotCount": "integer",
+    "failureInvestigationCount": "integer",
+    "cumulativeContextProxyTokens": "ceil(totalContextBytes / 4)  [labelled proxy]"
+  },
+
+  "howToMeasure": {
+    "snapshotBytes": "Sum the byte size of each browser_snapshot response captured (the .playwright-mcp/page-*.yml artifacts are a durable proxy source).",
+    "evaluateBytes": "Sum the byte size of each browser_evaluate JSON result.",
+    "repeatedContent": "Count a snapshot as repeated when its content equals a previously captured snapshot in the same run.",
+    "proxyTokens": "ceil(bytes / 4). Label 'proxy'. If a real provider token count is available, record it separately as 'providerTokens' and prefer it."
+  },
+
+  "output": {
+    "file": "qe-pipeline/output/{KEY}/execution/interactive-telemetry.json",
+    "rule": "Write one telemetry record per interactive run. Include a 'proxy: true' flag on all token figures unless providerTokens is present.",
+    "baselineComparison": "When a baseline record exists for the same scenario, also emit absolute and percentage deltas per metric, labelled proxy."
+  },
+
+  "acceptanceSignals": {
+    "reduce": [
+      "browserSnapshotCount (full-tree ones especially)",
+      "snapshotResponseBytes",
+      "repeatedContentRatio",
+      "plbReadBytes during passing steps (target: 0)"
+    ],
+    "preserve": [
+      "assertion execution count (must not drop)",
+      "failureInvestigationCount evidence completeness"
+    ],
+    "note": "Do NOT optimize for fewer tool calls alone. Optimize for minimum unnecessary context + response size + repeated info, with full correctness and full failure diagnosis."
+  }
+}

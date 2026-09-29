@@ -1,0 +1,74 @@
+{
+  "id": "testcase.schema.json",
+  "draft": "draft-07",
+  "title": "Test Case Contract",
+  "description": "Machine-validated output of the Tester Agent. Consumed by Automation Agent.",
+  "type": "object",
+  "required": ["storyKey", "generatedAt", "sourceScenarioCount", "testCases"],
+  "properties": {
+    "storyKey": { "type": "string", "pattern": "^[A-Z]+-\\d+$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sourceScenarioCount": { "type": "integer", "minimum": 1 },
+    "testCases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "dimension", "preconditions", "steps", "expectedResults", "priority", "linkedRequirement", "testType", "testSet", "sourceScenarioId", "tags"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+          "title": { "type": "string", "minLength": 10 },
+          "tags": {
+            "type": "object",
+            "required": ["domain", "suite", "story"],
+            "properties": {
+              "domain": { "type": "string", "minLength": 1 },
+              "suite": {
+                "type": "array",
+                "minItems": 1,
+                "items": { "type": "string", "enum": ["smoke", "regression"] },
+                "description": "One or both: ['regression'], ['smoke'], or ['smoke','regression'] for critical paths"
+              },
+              "story": { "type": "string", "pattern": "^[A-Z]+-\\d+$" }
+            }
+          },
+          "dimension": { "type": "string", "enum": ["UI", "API", "NF"], "description": "Testing dimension. NF = Non-Functional. Matches the planner scenario dimension enum and the TC-ID DIM segment (TC-NF-NNN)." },
+          "preconditions": { "type": "string", "minLength": 10 },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["stepNumber", "action", "target", "value"],
+              "properties": {
+                "stepNumber": { "type": "integer", "minimum": 1 },
+                "action": { "type": "string", "enum": ["Navigate", "Type", "Click", "Select", "Check", "Uncheck", "Clear", "Wait for", "Verify", "Leave empty", "Hover", "Press", "Scroll", "Set viewport"] },
+                "target": { "type": "string", "minLength": 1 },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "expectedResults": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["element", "state", "value"],
+              "properties": {
+                "element": { "type": "string", "minLength": 1 },
+                "state": { "type": "string", "enum": ["is visible", "is hidden", "is disabled", "is enabled", "contains text", "has value", "changes to", "displays", "redirects to", "has count"] },
+                "value": { "type": "string" }
+              }
+            }
+          },
+          "priority": { "type": "string", "enum": ["Critical", "High", "Medium", "Low"] },
+          "linkedRequirement": { "type": "string" },
+          "testType": { "type": "string", "enum": ["Automated", "Manual"] },
+          "testSet": { "type": "string" },
+          "sourceScenarioId": { "type": "string", "pattern": "^SC-\\d{3}$" },
+          "executionStatus": { "type": "string", "enum": ["Not Executed"] }
+        }
+      }
+    }
+  }
+}

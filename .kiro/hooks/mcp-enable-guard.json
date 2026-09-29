@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "MCP Enablement Guard (deterministic)",
+      "trigger": "PreToolUse",
+      "description": "Before an MCP tool call, deterministically verify the target server is enabled in .kiro/settings/mcp.json. Preserves the original safety objective (never let a call hit a disabled server and fail cryptically or produce a fabricated result) WITHOUT injecting a verbose agent prompt into model context on every MCP call. Optimization ADR: qe-pipeline/output/optimization/ADR-tester-mcp-token-optimization.md. Enabling remains each skill's Step 0 responsibility; this only checks. On a DISABLED server it emits a compact permissionDecision 'ask' so the user is prompted rather than the call failing silently.",
+      "matcher": "jira|playwright|figma|gitlab|mcp",
+      "action": {
+        "type": "command",
+        "timeout": 15,
+        "command": "powershell -NoProfile -Command \"$in = [Console]::In.ReadToEnd(); try { $ctx = $in | ConvertFrom-Json } catch { exit 0 }; $tool = ''; foreach($k in 'toolName','tool','name'){ if($ctx.PSObject.Properties.Name -contains $k -and $ctx.$k){ $tool = [string]$ctx.$k; break } }; if(-not $tool -and $ctx.hookSpecificOutput){ $tool = [string]$ctx.hookSpecificOutput.toolName }; if(-not $tool){ exit 0 }; $server = $null; if($tool -match 'jira|atlassian|confluence'){ $server='jira' } elseif($tool -match 'playwright|browser_'){ $server='playwright' } elseif($tool -match 'figma'){ $server='power-figma-figma' } elseif($tool -match 'gitlab|merge_request|create_branch|commit_files'){ $server='gitlab' }; if(-not $server){ exit 0 }; $p='.kiro/settings/mcp.json'; if(-not (Test-Path $p)){ exit 0 }; try { $j = Get-Content $p -Raw | ConvertFrom-Json } catch { exit 0 }; $match = $j.mcpServers.PSObject.Properties.Name | Where-Object { $_ -eq $server -or $_ -like ('*'+$server+'*') } | Select-Object -First 1; if(-not $match){ exit 0 }; $disabled = $j.mcpServers.$match.disabled; if($disabled -eq $true){ $reason = ('MCP server ''' + $match + ''' is disabled in .kiro/settings/mcp.json. The active skill likely skipped its Step 0 enable. Enable it (set disabled:false) before retrying. Guard did not enable it or fabricate a result.'); $out = @{ hookSpecificOutput = @{ permissionDecision = 'ask'; permissionDecisionReason = $reason } } | ConvertTo-Json -Compress -Depth 5; Write-Output $out; exit 0 } else { exit 0 }\""
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "description": "Per-app environment config for TCOE (IDP IELTS Booking System). NEVER hardcode credentials here — reference environment variables (loaded from qe-pipeline/.env) by name only.",
+  "app": "TCOE",
+  "environment": "sit",
+  "appUrl": "https://account.ielts.sit.idp.com/login-initiate",
+  "apiBaseUrl": "",
+  "_urlNotes": "SIT environment (per story TCOE-1356). appUrl = account login/signup, the flow start (sign up -> book). The booking wizard opens on https://bxsearch.ielts.sit.idp.com and account/booking pages on https://bx.ielts.sit.idp.com (both documented in the TCOE PKB navigation-map). The Planner may refine appUrl in Step 8. apiBaseUrl only for API-only stories. appUrl already satisfies the URL gate.",
+  "credentials": {
+    "note": "DO NOT hardcode credentials. Reference environment variables (loaded from qe-pipeline/.env) by name only.",
+    "lambdatest": {
+      "usernameEnvVar": "LT_USERNAME",
+      "accessKeyEnvVar": "LT_ACCESS_KEY"
+    },
+    "testUser": {
+      "usernameEnvVar": "TEST_USERNAME",
+      "passwordEnvVar": "TEST_PASSWORD"
+    }
+  },
+  "tunnel": {
+    "enabled": false,
+    "name": "{FILL_IF_TUNNEL_NEEDED: e.g. ECS-Shared-Tunnel-NonProd}"
+  },
+  "endpoints": {
+    "_doc": "Optional. Named API endpoint paths this app's tests hit, used by the execution health check to probe the SPECIFIC endpoint (not just the host)."
+  }
+}

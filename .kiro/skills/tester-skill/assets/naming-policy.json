@@ -1,0 +1,17 @@
+{
+  "description": "Naming conventions OWNED BY the tester skill: test-case identifiers. Not shared — each skill holds only the naming rules it produces.",
+  "version": "3.0.0",
+  "patterns": {
+    "testCaseId": {
+      "format": "TC-{DIMENSION}-{NNN}",
+      "regex": "^TC-(UI|API|NF)-\\d{3}$",
+      "example": "TC-UI-001",
+      "dimensions": ["UI", "API", "NF"],
+      "rules": ["Sequential per dimension, no gaps", "No reuse of deprecated IDs"]
+    }
+  },
+  "sequencing": {
+    "rule": "New items get NEXT available number. No gaps. No reuse.",
+    "startFrom": 1
+  }
+}

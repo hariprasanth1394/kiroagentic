@@ -1,0 +1,70 @@
+{
+  "id": "quality-gate.schema.json",
+  "draft": "draft-07",
+  "title": "Quality Gate Contract",
+  "description": "Machine-validated output of the Reporter Agent. Final pipeline verdict.",
+  "type": "object",
+  "required": ["status", "evaluatedAt", "pipelineRunId", "platform", "baseUrl", "metrics", "thresholds", "failureCategories"],
+  "properties": {
+    "status": { "type": "string", "enum": ["PASSED", "FAILED", "NOT_EVALUATED"] },
+    "evaluatedAt": { "type": "string", "format": "date-time" },
+    "pipelineRunId": { "type": "string" },
+    "platform": { "type": "string" },
+    "baseUrl": { "type": "string" },
+    "dashboardUrl": { "type": ["string", "null"], "description": "HyperExecute dashboard URL from execution_result, or null for local runs." },
+    "executionError": { "type": ["string", "null"], "description": "Infra/error string carried from execution_result.json. Informational only — does NOT force NOT_EVALUATED when real results exist." },
+    "metrics": {
+      "type": "object",
+      "required": ["passRate", "criticalFailures", "totalTests", "passed", "failed", "skipped", "flaky", "totalDuration_ms", "avgTestDuration_ms"],
+      "properties": {
+        "passRate": { "type": "number", "minimum": 0, "maximum": 100 },
+        "criticalFailures": { "type": "integer", "minimum": 0 },
+        "totalTests": { "type": "integer", "minimum": 0 },
+        "passed": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "flaky": { "type": "integer", "minimum": 0 },
+        "totalDuration_ms": { "type": "integer", "minimum": 0 },
+        "avgTestDuration_ms": { "type": "number", "minimum": 0 }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "required": ["minPassRate", "maxCriticalFailures", "maxTestDuration_ms"],
+      "properties": {
+        "minPassRate": { "type": "number" },
+        "maxCriticalFailures": { "type": "integer" },
+        "maxTestDuration_ms": { "type": "integer" },
+        "criticalTcPassRate": { "type": "number", "description": "Required pass rate over critical TCs only (default 100)." }
+      }
+    },
+    "thresholdChecks": {
+      "type": "object",
+      "description": "Per-threshold required/actual/met breakdown written by the reporter (Step 6). Optional but recommended for transparency.",
+      "additionalProperties": true
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Human-facing next-step notes (e.g. reconciliation discrepancies, deferred MR annotation).",
+      "items": { "type": "string" }
+    },
+    "failureCategories": {
+      "type": "object",
+      "required": ["productDefect", "environmentIssue", "testScriptError", "flakyTest"],
+      "properties": {
+        "productDefect": { "type": "integer", "minimum": 0 },
+        "environmentIssue": { "type": "integer", "minimum": 0 },
+        "testScriptError": { "type": "integer", "minimum": 0 },
+        "flakyTest": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "designedTests": { "type": "integer" },
+        "executedTests": { "type": "integer" },
+        "executionCoveragePercent": { "type": "number" }
+      }
+    }
+  }
+}

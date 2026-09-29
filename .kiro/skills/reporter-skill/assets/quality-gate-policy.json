@@ -1,0 +1,52 @@
+{
+  "description": "Quality gate evaluation rules for the regression suite. Reporter skill reads this to determine pass/fail/not-evaluated based on regression suite execution results.",
+  "version": "2.0.0",
+  "source": "qe-pipeline/output/{STORY-KEY}/execution/execution_result.json",
+  "thresholdsSource": {
+    "authoritative": "qe-pipeline/config/quality-gate-thresholds.json",
+    "rule": "The reporter reads threshold VALUES from the config file (authoritative). The values mirrored below are documentation only and MUST match the config. Key casing is unified to snake_case (maxTestDuration_ms) across both files."
+  },
+  "thresholds": {
+    "default": {
+      "minPassRate": 85,
+      "maxCriticalFailures": 2,
+      "maxTestDuration_ms": 60000,
+      "criticalTcPassRate": 100
+    },
+    "release": {
+      "minPassRate": 95,
+      "maxCriticalFailures": 0,
+      "maxTestDuration_ms": 60000,
+      "criticalTcPassRate": 100
+    },
+    "feature": {
+      "minPassRate": 85,
+      "maxCriticalFailures": 2,
+      "maxTestDuration_ms": 60000,
+      "criticalTcPassRate": 100
+    }
+  },
+  "thresholdEnforcement": {
+    "enforcedInGate": ["minPassRate", "maxCriticalFailures", "maxTestDuration_ms", "criticalTcPassRate"],
+    "criticalTcPassRate": "A critical-priority TC (source scenario/risk priority Critical, or JIRA priority Highest/Critical) MUST pass. Compute passRate over ONLY the critical TCs; if it is below criticalTcPassRate the gate FAILS even when overall passRate meets minPassRate. This is what makes 'a critical TC failed' fail the gate specifically, not just via the generic count.",
+    "deferred": {
+      "keys": ["maxOpenP1Defects", "maxOpenP2Defects"],
+      "reason": "These require querying JIRA for open defect counts, which the reporter does not do in v4. They are NOT enforced by the reporter gate. Leave them out of the gate math; a future release-gate step (or CI) can enforce them via a JIRA JQL count. Documented here so they are not mistaken for active gate inputs."
+    }
+  },
+  "calculation": {
+    "passRate": "passed / (passed + failed) * 100",
+    "excludeFromRate": ["skipped", "not_executed"],
+    "environmentIssues": "count as failures (test didn't pass)"
+  },
+  "gateStatus": {
+    "PASSED": "All thresholds met",
+    "FAILED": "Any threshold violated",
+    "NOT_EVALUATED": "Execution incomplete (env unavailable, infra error, error field populated in execution_result)"
+  },
+  "actions": {
+    "onPass": ["Generate report markdown", "Post JIRA comment", "Update pipeline-health.json"],
+    "onFail": ["Generate report markdown", "Post JIRA comment", "Update pipeline-health.json"],
+    "onNotEvaluated": ["Generate report with error details", "Do NOT create defects", "Inform user of infra issue"]
+  }
+}

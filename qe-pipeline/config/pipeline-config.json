@@ -1,0 +1,64 @@
+{
+  "pipeline": {
+    "name": "AI-Driven End-to-End Quality Automation Framework",
+    "version": "4.0.0",
+    "description": "Autonomous QE lifecycle: requirements → scenarios → test cases → automation → execution → reporting → defects → retest",
+    "agentSequence": [
+      "planner",
+      "tester",
+      "automation",
+      "execution",
+      "reporter",
+      "defect",
+      "retest"
+    ],
+    "_agentSequenceNote": "The seven implemented skills in .kiro/skills/. There is NO 'regression' skill in v4. Business-domain and full-regression RUNS are handled by the execution skill's domain/full modes (grep by @domain / no filter) — not a separate agent."
+  },
+  "jira": {
+    "cloudId": "a88ad6ed-9000-4269-bb19-087ecfc7dc6e",
+    "siteUrl": "https://idpchange.atlassian.net",
+    "storyUrlFormat": "https://idpchange.atlassian.net/browse/{storyId}",
+    "defectLabels": ["automated-regression"],
+    "_note": "projectKey is NOT stored here — it is DERIVED from the story key at runtime (e.g. TCOE-1356 → TCOE). cloudId resolved from idpchange.atlassian.net via getAccessibleAtlassianResources."
+  },
+  "apps": {
+    "_doc": "Per-application registry. Each app = one long-lived git repo + one ISOLATED regression suite (Option B). Key = JIRA project prefix (story key before the dash, e.g. TCOE-101 → 'TCOE'). Suites never mix across apps.",
+    "_resolution": "appKey = storyKey.split('-')[0]. If no entry matches → HALT and ask the user to register the app here. Never guess a repo, suite path, or URL.",
+    "TCOE": {
+      "displayName": "IDP IELTS Booking System",
+      "suiteDir": "qe-pipeline/output/regression-suite-TCOE",
+      "envConfig": "qe-pipeline/config/env_config.TCOE.json",
+      "pkbDir": "qe-pipeline/knowledge/product-TCOE",
+      "_pkbDirNote": "Per-app Product Knowledge Base (live-app documentation) owned by the product-knowledge-skill and read by the planner. Already populated for TCOE (screens/, workflows/, business-rules.md, navigation-map.md).",
+      "git": {
+        "provider": "gitlab",
+        "projectPath": "{FILL_BEFORE_SCRIPTING: group/subgroup/repo-name}",
+        "defaultBranch": "develop",
+        "branchPrefix": "feature/",
+        "_note": "Long-lived repo for this app. Only needed for the Scripting (automation) phase — Planning and Tester do NOT need it. Fill projectPath (and confirm defaultBranch) before running Run Scripting for TCOE-XXX. Repo must already exist."
+      }
+    }
+  },
+  "execution": {
+    "platform": "HyperExecute",
+    "hyperExecutePath": "hyperexecute.exe",
+    "_hyperExecutePathNote": "Relative to the workspace root. Provision the binary at the root; do not commit user-specific absolute paths.",
+    "browserExecution": "remote",
+    "remoteRouting": "Option B (cloud overlay): execution injects LT_CDP_URL (built via execution-skill/assets/playwright-cloud-config.ts) into the HyperExecute YAML env; the app's playwright.config.ts reads it into use.connectOptions.wsEndpoint. No lambdatest-setup.ts; specs import from fixtures/ only.",
+    "autoHeal": false,
+    "autoHealNote": "Grid selector auto-heal DISABLED — it masks selector breakage (false green). Fix selectors in Page Objects with DOM evidence via the Automation skill.",
+    "credentialSource": "qe-pipeline/.env"
+  },
+  "qualityGate": {
+    "configFile": "qe-pipeline/config/quality-gate-thresholds.json"
+  },
+  "outputs": {
+    "pattern": "qe-pipeline/output/{STORY-KEY}/{agent}",
+    "_note": "Per-story pipeline artifacts are keyed by STORY-KEY and app-agnostic in path. Generated CODE goes into the app's isolated suite at apps.{APP}.suiteDir — NOT a single shared regression-suite/."
+  },
+  "inputs": {
+    "envConfig": "Resolved per app from apps.{APP}.envConfig (e.g. env_config.TCOE.json). Copy env_config.template.json to create a new one.",
+    "regressionSuite": "Resolved per app from apps.{APP}.suiteDir. Each app has its own registry/, playwright.config.ts, and core/.",
+    "hyperexecuteReference": ".kiro/skills/execution-skill/assets/hyperexecute-reference.yaml"
+  }
+}

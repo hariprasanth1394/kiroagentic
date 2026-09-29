@@ -1,0 +1,143 @@
+{
+  "description": "MCP evidence policy for the interactive Kiro+Playwright execution path. The interactive-execution-skill reads this at runtime to choose the LOWEST-COST SUFFICIENT evidence level for every browser_* operation, preserving full correctness and failure diagnosis. Governs ONLY interactive execution — NOT HyperExecute (deterministic), NOT automation-skill generation, NOT product-knowledge discovery.",
+  "version": "1.0.0",
+  "role": "interactive-execution-skill",
+  "principle": "The testcase is the execution contract. PLB is failure/evidence support, not a per-step dependency. Select the smallest MCP call that lets the next decision be made correctly. Never capture a full snapshot to reconfirm known information.",
+
+  "callClassification": {
+    "rule": "Before ANY browser_* call, classify it and pick the lowest sufficient category. Record the category in telemetry.",
+    "categories": {
+      "DIRECT_EXECUTION": {
+        "when": "Testcase step + known/verified evidence are sufficient to act (navigate, click, type, select on a known control).",
+        "allowed": ["browser_navigate", "browser_click", "browser_type", "browser_select", "browser_press_key", "browser_fill_form"],
+        "forbidden": ["browser_snapshot to reconfirm a control already known", "browser_evaluate to re-read known state"],
+        "contextCost": "minimal"
+      },
+      "TARGETED_DISCOVERY": {
+        "when": "A known interaction cannot be executed (element not found / disabled / ambiguous) OR a single fact is needed to proceed.",
+        "prefer": "browser_evaluate returning a COMPACT projection only",
+        "compactShape": ["tag", "role", "name", "id", "testId", "visible", "enabled", "relevantText"],
+        "forbidden": ["returning full DOM", "returning innerHTML of large containers", "document-wide element dumps when a scoped query suffices"],
+        "contextCost": "small"
+      },
+      "SCOPED_DISCOVERY": {
+        "when": "Targeted discovery is insufficient; the relevant region's structure is needed.",
+        "prefer": "browser_snapshot scoped to the relevant subtree via a target/ref or a depth limit — NOT the whole tree",
+        "forbidden": ["full-page browser_snapshot when a region suffices"],
+        "contextCost": "medium"
+      },
+      "FULL_DISCOVERY": {
+        "when": "Page structure is genuinely unknown, OR targeted+scoped discovery failed, OR broad accessibility context is required.",
+        "allowed": ["browser_snapshot (full)"],
+        "constraint": "Exceptional, not default. Must be justified by a prior failed lower level or a genuinely unknown page.",
+        "contextCost": "high"
+      },
+      "FAILURE_INVESTIGATION": {
+        "when": "Action fails, assertion fails, expected state not reached, evidence invalidated, or unexpected page/state.",
+        "sequence": [
+          "1. Capture COMPACT failure state (step id, page, action, expected vs observed one-liners, error text verbatim).",
+          "2. Retrieve ONLY the relevant PLB slice for this page/component (never whole PKB).",
+          "3. Compare recorded expected behavior vs current application evidence.",
+          "4. Perform the smallest useful MCP investigation (start at TARGETED_DISCOVERY).",
+          "5. Escalate to SCOPED then FULL discovery ONLY if lower levels are inconclusive.",
+          "6. Classify failure (see failureClasses).",
+          "7. Preserve COMPLETE evidence for reporting/auditability."
+        ],
+        "contextCost": "bounded; grows only as far as diagnosis requires"
+      }
+    }
+  },
+
+  "antiPatterns": {
+    "bannedByDefault": [
+      "snapshot -> action -> snapshot -> action -> snapshot cadence",
+      "capturing a full browser_snapshot after every action",
+      "re-capturing an identical snapshot when nothing structurally changed",
+      "browser_evaluate dumps of the entire element inventory during normal execution",
+      "injecting whole PLB documents during a passing step"
+    ],
+    "afterActionRule": "After an action, do NOT capture new structural evidence unless the NEXT decision requires structural information not already known. Prefer asserting the specific expected outcome (URL/text/element-state) via the narrowest check."
+  },
+
+  "compactExecutionContext": {
+    "description": "The only state carried between steps. Keep it small; use references/hashes, never embed full DOM/PLB/snapshots.",
+    "shape": {
+      "testcaseId": "string",
+      "stepId": "string",
+      "app": "string",
+      "env": "string",
+      "currentPage": "string (route or PKB screen id)",
+      "currentState": "short string (e.g. 'payment-options loaded')",
+      "knownEvidenceRefs": ["evidenceHash ids only"],
+      "validatedSelectors": [{ "element": "string", "selector": "string", "evidenceHash": "string" }],
+      "failure": "null | { stepId, expected, observed, errorText }"
+    },
+    "rules": [
+      "Do NOT store full snapshots, full DOM, full PLB, or prior tool outputs here.",
+      "Reference prior evidence by evidenceHash, not by re-embedding it.",
+      "Only include what the current/next step needs."
+    ]
+  },
+
+  "evidenceCache": {
+    "description": "Safe reuse of verified locators/observations to avoid re-discovery.",
+    "cacheKey": ["app", "env", "page", "element", "knowledgeVersionOrHash"],
+    "record": { "element": "string", "selector": "string", "count": 1, "verifiedBy": "browser_evaluate|locator.count()", "evidenceHash": "string", "capturedAt": "iso8601" },
+    "reuseAllowedWhen": [
+      "same app AND same env",
+      "same page/component",
+      "evidenceHash still valid (knowledge version unchanged)",
+      "a previous step in this run confirmed it",
+      "no contradiction observed since capture"
+    ],
+    "invalidateWhen": [
+      "page/product version changes",
+      "relevant PLB hash changes",
+      "selector resolves to 0 or >1 at use time",
+      "environment changes materially",
+      "runtime evidence contradicts the cached record"
+    ],
+    "onInvalidation": "Drop the record and rediscover from TARGETED_DISCOVERY upward. NEVER use a stale record blindly.",
+    "reuseMechanism": "Reference by evidenceHash in compactExecutionContext.validatedSelectors — do NOT re-emit the full evidence payload into context."
+  },
+
+  "plbUsage": {
+    "normalExecution": "Do NOT retrieve PLB for passing steps. Testcase is the contract.",
+    "failureOrAmbiguity": "Retrieve ONLY the relevant slice: pkbRefs.screens[<page>] section or the specific component — never the whole PKB.",
+    "retrieveByReference": "Prefer section anchors / component ids over whole-file reads.",
+    "noDuplication": "Do not duplicate the same knowledge across testcase context + PLB + MCP result."
+  },
+
+  "failureClasses": [
+    "application/product change",
+    "locator change",
+    "timing/state issue",
+    "test-data issue",
+    "environment issue",
+    "authentication/session issue",
+    "browser/tool issue",
+    "genuine testcase defect",
+    "unknown"
+  ],
+
+  "safetyInvariants": {
+    "mustNot": [
+      "remove or skip testcase steps or preconditions",
+      "weaken or skip assertions / expected-result checks",
+      "hide or suppress failures",
+      "disable MCP globally",
+      "remove PLB or Product Acquiring",
+      "add arbitrary waits (use explicit wait-for a specific condition/element)",
+      "add blind locator fallbacks without evidence",
+      "auto-heal selectors without live-DOM evidence",
+      "reduce auditability or evidence traceability"
+    ],
+    "mustPreserve": [
+      "every required step executes",
+      "every required assertion executes",
+      "failures remain visible and classified",
+      "complete failure evidence retained for reporting",
+      "escalation to full discovery remains possible"
+    ]
+  }
+}

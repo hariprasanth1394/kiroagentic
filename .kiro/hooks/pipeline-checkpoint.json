@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Pipeline Contract Validator",
+      "description": "Policy-driven contract validator. Loads validation rules from validation-policy.json instead of hardcoding them.",
+      "trigger": "PostToolUse",
+      "matcher": "^(fs_write|fs_append|str_replace|delete_file|code)$",
+      "action": {
+        "type": "agent",
+        "prompt": "A file was just written. Validate it using the policy-driven approach:\n\n1. Identify the filename that was written.\n2. Read .kiro/skills/automation-skill/assets/validation-policy.json\n3. Find the matching rule in the rules[] array (match by filename pattern).\n4. If no rule matches → SKIP entirely, no action needed.\n5. If a rule matches → apply each validation in that rule's validations[] array.\n6. If stopOnFail is true and any validation fails → STOP PIPELINE and report which validation failed.\n7. If the rule has postActions → execute them after validation passes.\n\nDo NOT invent validation rules. Only apply what validation-policy.json specifies."
+      },
+      "enabled": false
+    }
+  ]
+}

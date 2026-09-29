@@ -1,0 +1,417 @@
+{
+  "description": "Registry of EXTERNAL, pre-existing regression suites (mostly java-cucumber in GitLab, plus a few legacy per-story Playwright entries) that live OUTSIDE the v4 AI pipeline. There is no 'regression' skill in v4 — nothing in .kiro/skills/ reads or writes this file automatically. It is a human/CI reference for which external suites cover which feature areas. The v4 AI pipeline's own regression RUNS (business-domain / full) are handled by the execution skill's domain/full modes against the unified regression-suite, not by this registry.",
+  "_scope": "External suites only. The v4 six-layer flatLayers rule and the unified qe-pipeline/output/regression-suite/ do NOT apply to the java-cucumber/GitLab suites listed here — those keep their own repo structure (e.g. tests/ui, tests/api) and are run by their own CI, not the AI pipeline.",
+  "version": "4.0.0",
+  "gitlabProject": {
+    "projectId": "83050712",
+    "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/bx_ui_automation",
+    "defaultBranch": "develop",
+    "_note": "This is the external UI-automation regression repo. It is DISTINCT from pipeline-config.json → gitlab.scriptRepo (EnterpriseAIProgram), which is where the AI pipeline would push generated scripts if git push is enabled. Different repos, different purposes — do not conflate."
+  },
+  "suites": {
+    "review-page": {
+      "stories": ["TCOE-330"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/ui/review-navigation.spec.ts",
+        "tests/ui/review-ratings-filters.spec.ts",
+        "tests/ui/review-cards-sort.spec.ts",
+        "tests/ui/review-responsive-accessibility.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/TCOE-330/automation/",
+      "tags": ["@regression", "@review"],
+      "baseUrl": "https://mtest.test.aws.whatuni.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "registration": {
+      "stories": ["TCOE-147"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/ui/login-page.spec.ts",
+        "tests/ui/registration-form.spec.ts",
+        "tests/ui/registration-flow.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/TCOE-147/automation/",
+      "tags": ["@smoke", "@regression"],
+      "baseUrl": "https://mtest.test.aws.whatuni.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "p1-booking-ac": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@TTP2"],
+      "source": "gitlab",
+      "description": "Academic Core Booking flow",
+      "environment": "sit",
+      "location": "MEL",
+      "product": "AC",
+      "lastRun": "2026-06-30",
+      "lastResult": "failed"
+    },
+    "p1-booking-gt": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@TTP3"],
+      "source": "gitlab",
+      "description": "General Training Core Booking",
+      "environment": "sit",
+      "location": "MEL",
+      "product": "AC",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "p1-ukvi-ac": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@TTP4"],
+      "source": "gitlab",
+      "description": "UKVI Academic",
+      "environment": "sit",
+      "location": "MEL",
+      "product": "AC",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "p1-ukvi-gt": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@TTP5"],
+      "source": "gitlab",
+      "description": "UKVI General Training",
+      "environment": "sit",
+      "location": "MEL",
+      "product": "AC",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "integration-tt-tas-reschedule": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@Flow_1_TT"],
+      "source": "gitlab",
+      "description": "TT → TAS Integration: IOC Academic booking + validation",
+      "environment": "uat",
+      "location": "MEL",
+      "product": "AC",
+      "targetRepo": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "validationTag": "@DataValidation",
+        "handoffArtifact": "test-output/Integration_Candidate.properties"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "integration-tt-tas-gt": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@Flow_2_TT"],
+      "source": "gitlab",
+      "description": "TT → TAS Integration: IOC General Training booking + validation",
+      "environment": "uat",
+      "location": "MEL",
+      "product": "GT",
+      "targetRepo": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "validationTag": "@DataValidation_2",
+        "handoffArtifact": "test-output/Integration_Candidate.properties"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "integration-tt-tas-ukvi-ac": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@Flow_3_TT"],
+      "source": "gitlab",
+      "description": "TT → TAS Integration: UKVI Academic booking + validation",
+      "environment": "uat",
+      "location": "SYD",
+      "product": "UKVIAC",
+      "targetRepo": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "validationTag": "@DataValidation_3",
+        "handoffArtifact": "test-output/Integration_Candidate.properties"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "integration-tt-tas-ukvi-gt": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@Flow_4_TT"],
+      "source": "gitlab",
+      "description": "TT → TAS Integration: UKVI General Training booking + validation",
+      "environment": "uat",
+      "location": "SYD",
+      "product": "UKVIGT",
+      "targetRepo": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "validationTag": "@DataValidation_4",
+        "handoffArtifact": "test-output/Integration_Candidate.properties"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "integration-tt-tas-cancel": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@Flow_5_TT"],
+      "source": "gitlab",
+      "description": "TT → TAS Integration: IOC Offline Cancel + validation",
+      "environment": "uat",
+      "location": "MEL",
+      "product": "GT",
+      "targetRepo": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "validationTag": "@DataValidation_5",
+        "handoffArtifact": "test-output/Integration_Candidate.properties"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "tas-p1-sit": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@P1-SIT"],
+      "source": "gitlab",
+      "description": "TAS P1 SIT regression (BackOffice core flows)",
+      "environment": "sit",
+      "testCentre": "HOME",
+      "testProduct": "IOL_AC",
+      "gitlabProject": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "defaultBranch": "develop"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "tas-p2-sit": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@P2"],
+      "source": "gitlab",
+      "description": "TAS P2 SIT (Session Creation, EOR, IAM Import)",
+      "environment": "sit",
+      "testCentre": "MEL241",
+      "testProduct": "IOC_AC",
+      "gitlabProject": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "defaultBranch": "develop"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "tas-ap-sit": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@AP"],
+      "source": "gitlab",
+      "description": "TAS Application Management (SIT)",
+      "environment": "sit",
+      "testCentre": "MEL241",
+      "testProduct": "IOC_AC",
+      "gitlabProject": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "defaultBranch": "develop"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "tas-up-sit": {
+      "stories": [],
+      "framework": "java-cucumber",
+      "tags": ["@UP"],
+      "source": "gitlab",
+      "description": "TAS Update Profile (SIT)",
+      "environment": "sit",
+      "testCentre": "MEL241",
+      "testProduct": "IOC_AC",
+      "gitlabProject": {
+        "projectPath": "idp-education/ielts/ors/test-automation/ui-automation/backoffice_ui_automation",
+        "defaultBranch": "develop"
+      },
+      "lastRun": null,
+      "lastResult": null
+    },
+    "video-recording": {
+      "stories": ["BREW-98"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/ui/video-recording-feedback.spec.ts",
+        "tests/api/video-upload-url.spec.ts",
+        "tests/api/video-complete-session.spec.ts",
+        "tests/api/video-auth-access.spec.ts",
+        "tests/api/video-pipeline-integration.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/BREW-98/automation/",
+      "tags": ["@regression", "@video-recording", "@practice"],
+      "baseUrl": "https://uk-ready-check-stage.rpp.dev.idp.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "script-reading-detection": {
+      "stories": ["BREW-99"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/api/script-reading-detection.spec.ts",
+        "tests/api/script-reading-boundaries.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/BREW-99/automation/",
+      "tags": ["@regression", "@script-reading", "@practice", "@gaze-detection"],
+      "baseUrl": "https://api.stage.rpp.dev.idp.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "practice-navigation": {
+      "stories": ["BREW-100"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/api/practice-navigation.spec.ts",
+        "tests/api/practice-rerecord.spec.ts",
+        "tests/api/practice-boundaries-auth.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/BREW-100/automation/",
+      "tags": ["@regression", "@practice-navigation", "@practice"],
+      "baseUrl": "https://api.stage.rpp.dev.idp.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "ai-boundary-enforcement": {
+      "stories": ["BREW-101"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/api/boundary-enforcement.spec.ts",
+        "tests/api/boundary-risk-expansion.spec.ts",
+        "tests/nf/boundary-performance.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/BREW-101/automation/",
+      "tags": ["@regression", "@ai-boundary", "@practice", "@safety"],
+      "baseUrl": "https://api.stage.rpp.dev.idp.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "score-improvement-trends": {
+      "stories": ["BREW-102"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/api/score-trends-auth.spec.ts",
+        "tests/api/score-trends-data.spec.ts",
+        "tests/nf/score-trends-performance.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/BREW-102/automation/",
+      "tags": ["@regression", "@score-trends", "@practice", "@performance"],
+      "baseUrl": "https://api.stage.rpp.dev.idp.com",
+      "lastRun": null,
+      "lastResult": null
+    },
+    "mystore-api": {
+      "stories": ["API-TEST"],
+      "framework": "playwright",
+      "specFiles": [
+        "tests/api/search-api.spec.ts",
+        "tests/api/products-api.spec.ts",
+        "tests/api/wishlist-api.spec.ts",
+        "tests/api/cart-api.spec.ts",
+        "tests/api/auth-api.spec.ts"
+      ],
+      "localPath": "qe-pipeline/output/API-TEST/automation/",
+      "tags": ["@regression", "@mystore-api", "@search", "@wishlist", "@cart"],
+      "baseUrl": "https://hntwmrwmsl.execute-api.ap-southeast-1.amazonaws.com/v1",
+      "lastRun": null,
+      "lastResult": null
+    }
+  },
+  "impactMap": {
+    "review-page": {
+      "keywords": ["review", "rating", "star", "university-course-reviews", "whatuni"],
+      "codePatterns": ["**/review/**", "**/rating/**", "**/university-course-reviews/**"],
+      "affectedSuites": ["review-page"],
+      "jiraComponents": ["Review Page", "Ratings"]
+    },
+    "registration": {
+      "keywords": ["register", "signup", "auth", "cognito", "login"],
+      "codePatterns": ["**/register/**", "**/auth/**", "**/cognito/**", "**/signup*"],
+      "affectedSuites": ["registration"],
+      "jiraComponents": ["Registration", "Authentication"]
+    },
+    "booking": {
+      "keywords": ["booking", "session", "payment", "braintree", "paydollar", "stripe"],
+      "codePatterns": ["**/booking/**", "**/session/**", "**/payment/**"],
+      "affectedSuites": ["p1-booking-ac", "p1-booking-gt"],
+      "jiraComponents": ["Booking", "Payments", "Session"]
+    },
+    "ukvi": {
+      "keywords": ["ukvi", "visa", "biometric"],
+      "codePatterns": ["**/ukvi/**", "**/visa/**"],
+      "affectedSuites": ["p1-ukvi-ac", "p1-ukvi-gt"],
+      "jiraComponents": ["UKVI"]
+    },
+    "search": {
+      "keywords": ["search", "dom-search", "cugSearch", "sorting", "filter"],
+      "codePatterns": ["**/search/**", "**/dom-search/**", "**/cugSearch*", "**/sorting*"],
+      "affectedSuites": [],
+      "jiraComponents": ["Search", "CUG Search"],
+      "_note": "No Playwright suite yet — Java tests in GitLab cover this via @P1 tags"
+    },
+    "integration": {
+      "keywords": ["sync", "propagate", "integration", "cross-system", "TT-TAS", "flow", "IOC", "booking-validation"],
+      "codePatterns": ["**/integration/**", "**/sync/**"],
+      "affectedSuites": ["integration-tt-tas-reschedule", "integration-tt-tas-gt", "integration-tt-tas-ukvi-ac", "integration-tt-tas-ukvi-gt", "integration-tt-tas-cancel"],
+      "jiraComponents": ["Integration", "Cross-System", "IOC"]
+    },
+    "tas": {
+      "keywords": ["backoffice", "TAS", "session-creation", "application-management", "update-profile", "IAM", "EOR"],
+      "codePatterns": ["**/backoffice/**", "**/tas/**"],
+      "affectedSuites": ["tas-p1-sit", "tas-p2-sit", "tas-ap-sit", "tas-up-sit"],
+      "jiraComponents": ["BackOffice", "TAS", "Session Management"]
+    },
+    "video-recording": {
+      "keywords": ["video", "recording", "practice", "feedback", "eye-contact", "spontaneity", "pacing", "rekognition", "bedrock", "camera"],
+      "codePatterns": ["**/practice/**", "**/video/**", "**/recording/**"],
+      "affectedSuites": ["video-recording", "script-reading-detection"],
+      "jiraComponents": ["Practice", "Video Recording", "AI Feedback"]
+    },
+    "script-reading": {
+      "keywords": ["script-reading", "gaze", "downward-gaze", "coaching", "spontaneity", "memorisation", "rekognition", "bedrock-nlp", "threshold"],
+      "codePatterns": ["**/practice/**", "**/gaze/**", "**/script-reading/**"],
+      "affectedSuites": ["script-reading-detection"],
+      "jiraComponents": ["Practice", "Script Detection", "Coaching"]
+    },
+    "practice-navigation": {
+      "keywords": ["navigate", "skip", "re-record", "question", "practice-session", "recording-history", "DynamoDB", "ukrc-practice"],
+      "codePatterns": ["**/practice/**", "**/navigation/**", "**/session/**"],
+      "affectedSuites": ["practice-navigation"],
+      "jiraComponents": ["Practice", "Navigation"]
+    },
+    "ai-boundary-enforcement": {
+      "keywords": ["boundary", "guardrails", "bedrock", "prohibited", "visa-advice", "immigration-advice", "financial-advice", "AI-safety", "false-negative", "compliance"],
+      "codePatterns": ["**/practice/**", "**/boundary/**", "**/guardrails/**"],
+      "affectedSuites": ["ai-boundary-enforcement"],
+      "jiraComponents": ["Practice", "AI Safety", "Boundary Enforcement"]
+    },
+    "score-improvement-trends": {
+      "keywords": ["score", "trends", "improvement", "progress", "practice-session", "longitudinal", "eyeContact", "spontaneity", "specificity", "pacing", "DynamoDB"],
+      "codePatterns": ["**/practice/**", "**/trends/**", "**/scores/**"],
+      "affectedSuites": ["score-improvement-trends"],
+      "jiraComponents": ["Practice", "Score Trends"]
+    },
+    "mystore-api": {
+      "keywords": ["mystore", "search", "wishlist", "cart", "product", "catalog", "ecommerce", "api"],
+      "codePatterns": ["**/mystore/**", "**/search/**", "**/wishlist/**", "**/cart/**"],
+      "affectedSuites": ["mystore-api"],
+      "jiraComponents": ["MyStore", "Search", "Wishlist", "Cart"]
+    }
+  },
+  "resolutionLogic": {
+    "description": "Reference lookup for a human/CI operator (NOT an AI skill) deciding which EXTERNAL suite covers a feature area. The v4 AI pipeline does not execute these; it runs its own unified regression-suite via the execution skill's domain/full modes.",
+    "steps": [
+      "1. If a suite name is given directly → use that suite from suites{}",
+      "2. If a feature area is given → look up impactMap[area].affectedSuites",
+      "3. If a JIRA story key is given → check suites{}.stories for match",
+      "4. If 'Run Regression' with no args → use all suites with lastResult != null OR ask",
+      "5. If nothing matches → 'No external suite registered for this area'"
+    ]
+  }
+}

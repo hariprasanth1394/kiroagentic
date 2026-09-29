@@ -1,0 +1,11 @@
+{
+  "description": "Naming conventions OWNED BY the execution skill: the pipeline run identifier (generated here, reused by the reporter). Not shared — each skill holds only the naming rules it produces.",
+  "version": "3.0.0",
+  "patterns": {
+    "pipelineRunId": {
+      "format": "run_{YYYYMMDD}_{HHmmss}",
+      "regex": "^run_\\d{8}_\\d{6}$",
+      "example": "run_20260630_113758"
+    }
+  }
+}

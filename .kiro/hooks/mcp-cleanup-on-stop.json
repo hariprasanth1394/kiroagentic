@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "MCP Cleanup on Stop",
+      "trigger": "Stop",
+      "description": "Force-disables every MCP server in .kiro/settings/mcp.json when an agent execution ends, so a skill that crashed or forgot its final disable step never leaves a server enabled. Idempotent — safe to run every time.",
+      "action": {
+        "type": "command",
+        "command": "powershell -NoProfile -Command \"$p='.kiro/settings/mcp.json'; if(Test-Path $p){ try { $j=Get-Content $p -Raw | ConvertFrom-Json; $changed=$false; foreach($n in $j.mcpServers.PSObject.Properties.Name){ if($j.mcpServers.$n.disabled -ne $true){ $j.mcpServers.$n.disabled=$true; $changed=$true } }; if($changed){ ($j | ConvertTo-Json -Depth 20) | Set-Content $p -Encoding UTF8; Write-Output 'MCP servers disabled on Stop' } else { Write-Output 'MCP servers already all disabled' } } catch { Write-Output ('MCP cleanup skipped: '+$_.Exception.Message) } }\"",
+        "timeout": 30
+      },
+      "enabled": false
+    }
+  ]
+}

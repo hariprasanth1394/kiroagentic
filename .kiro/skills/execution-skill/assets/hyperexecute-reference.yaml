@@ -1,0 +1,62 @@
+---
+# HyperExecute Reference Template
+# This is the base template for generating story/domain/full execution YAML.
+# The execution skill copies this and modifies: testDiscovery.command, testRunnerCommand, concurrency.
+
+version: "0.1"
+globalTimeout: 900
+testSuiteTimeout: 600
+testSuiteStep: 90
+taskTimeout: 600
+
+runson: win
+concurrency: 2
+
+retryOnFailure: true
+maxRetries: 1
+
+tunnel: true
+tunnelNames:
+  - ECS-Shared-Tunnel-NonProd
+
+autosplit: true
+testDiscovery:
+  type: raw
+  mode: dynamic
+  command: "echo {SPEC_FILES}"  # Replaced at generation time with actual spec file list
+
+testRunnerCommand: "npx playwright test $test --project=chromium"  # grep appended at generation time
+
+runtime:
+  language: node
+  version: "18"
+
+pre:
+  - npm config set strict-ssl false
+  - npm install
+
+env:
+  BASE_URL: "${BASE_URL}"
+  NODE_TLS_REJECT_UNAUTHORIZED: "0"
+  LT_USERNAME: "${LT_USERNAME}"
+  LT_ACCESS_KEY: "${LT_ACCESS_KEY}"
+  # Remote-browser routing (Option B). Built at generation time via
+  # assets/playwright-cloud-config.ts buildLtCdpUrl(). playwright.config.ts reads
+  # this into use.connectOptions.wsEndpoint. Without it, tests run on a LOCAL
+  # browser on the VM (false green). Specs stay cloud-agnostic (no setup file).
+  LT_CDP_URL: "${LT_CDP_URL}"
+
+report:
+  enabled: true
+  partialReports:
+    location: allure-results
+    frameworkName: allure
+    type: html
+
+uploadArtefacts:
+  - name: "Allure Results"
+    path:
+      - allure-results/**
+  - name: "Allure Report"
+    path:
+      - allure-report/**

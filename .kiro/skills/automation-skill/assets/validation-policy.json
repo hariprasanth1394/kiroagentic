@@ -1,0 +1,162 @@
+{
+  "description": "Contract validation rules. The hook loads this file and applies matching rules to the written file. Adding a new validation = append to rules array.",
+  "version": "2.0.0",
+  "rules": [
+    {
+      "match": "scenario-inventory.json",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "uniqueSequentialIds", "field": "scenarios[].id", "pattern": "SC-\\d{3}" },
+        { "type": "requiredField", "field": "scenarios[].confidence", "allowedValues": ["high", "medium", "low"] },
+        { "type": "requiredField", "field": "scenarios[].category", "allowedValues": ["positive", "negative", "boundary", "error-handling"] },
+        { "type": "requiredField", "field": "scenarios[].source", "notEmpty": true },
+        { "type": "consistentField", "field": "scenarios[].storyKey", "rule": "All must match" },
+        { "type": "approximateCount", "field": "scenarios", "referenceField": "scope.estimatedScenarios", "tolerance": 3 },
+        { "type": "calculation", "field": "risks[].score", "formula": "severity * likelihood", "mapping": { "severity": { "Critical": 4, "High": 3, "Medium": 2, "Low": 1 }, "likelihood": { "High": 3, "Medium": 2, "Low": 1 } } },
+        { "type": "noDuplicates", "field": "scenarios[].id" }
+      ]
+    },
+    {
+      "match": "test-cases.json",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "uniqueSequentialIds", "field": "testCases[].id", "pattern": "TC-(UI|API|NF)-\\d{3}", "perGroup": "dimension" },
+        { "type": "referenceExists", "field": "testCases[].sourceScenarioId", "in": "scenario-inventory.json -> scenarios[].id" },
+        { "type": "countGte", "field": "testCases.length", "reference": "scenario-inventory.json -> scenarios.length" },
+        { "type": "requiredSubfields", "field": "testCases[].steps[]", "subfields": ["action", "target", "value"] },
+        { "type": "requiredSubfields", "field": "testCases[].expectedResults[]", "subfields": ["element", "state", "value"] },
+        { "type": "bannedLanguage", "fields": ["preconditions", "steps", "expectedResults"], "banned": ["should work", "verify it works", "check everything", "etc"] }
+      ]
+    },
+    {
+      "match": "automation-manifest.json",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "referenceExists", "field": "artifacts.tests[].testCaseIds[]", "in": "test-cases.json -> testCases[].id" },
+        { "type": "requiredSubfields", "field": "artifacts.pages[].locators[]", "subfields": ["evidence.source", "evidence.count", "evidence.verifiedBy"] },
+        { "type": "requiredSubfields", "field": "artifacts.components[].locators[]", "subfields": ["evidence.source", "evidence.count", "evidence.verifiedBy"] },
+        { "type": "enumField", "field": "artifacts.pages[].locators[].evidence.verifiedBy", "allowedValues": ["browser_evaluate", "locator.count()", "page-snapshot-match"], "_note": "count must be MEASURED by executing the locator, not assumed. Missing/invalid verifiedBy = self-reported = reject." },
+        { "type": "enumField", "field": "artifacts.components[].locators[].evidence.verifiedBy", "allowedValues": ["browser_evaluate", "locator.count()", "page-snapshot-match"] },
+        { "type": "selectorEvidenceCount", "field": "artifacts.pages[].locators[].evidence.count", "mustEqual": 1 },
+        { "type": "selectorEvidenceCount", "field": "artifacts.components[].locators[].evidence.count", "mustEqual": 1 },
+        { "type": "selectorEvidenceCount", "field": "artifacts.pages[].locators[].fallbacks[].evidence.count", "mustEqual": 1, "_note": "Every .or() fallback must be evidence-backed and unique — not just the primary." },
+        { "type": "selectorEvidenceCount", "field": "artifacts.components[].locators[].fallbacks[].evidence.count", "mustEqual": 1 },
+        { "type": "requiredSubfields", "field": "artifacts.pages[].locators[].fallbacks[]", "subfields": ["evidence.source", "evidence.count"], "_note": "Fallbacks are optional, but if present each MUST carry evidence — no unverified guesses." },
+        { "type": "sumEquals", "rule": "summary.generated + summary.modified + summary.reused >= 0 (counts are non-negative)" },
+        { "type": "traceabilityChain", "rule": "Every artifacts.tests[] entry maps testCaseIds back to test-cases.json testCases[].id" },
+        { "type": "noDuplicates", "field": "artifacts.tests[].testCaseIds[]", "scope": "across all test artifacts" },
+        { "type": "requiredSubfields", "field": "artifacts.services[].locators[]", "subfields": [], "_note": "Services have NO locators — the field must be absent/empty. Presence of any locator on a service is a violation." },
+        { "type": "capabilityImplemented", "rule": "Every capabilityId listed on artifacts.flows[].capabilities[] and artifacts.services[].capabilities[] resolves to a real {file, method} in the corresponding registry catalog (flow-catalog/service-catalog). No capability ID without an implementation." },
+        { "type": "capabilityUnique", "field": "capabilityId", "rule": "A capability ID maps to exactly ONE implementation {file, method}. Two artifacts MUST NOT claim the same capability ID with different implementations (would defeat reuse)." },
+        { "type": "scenarioCapabilityRefs", "rule": "Every capability ID referenced by a scenario-catalog entry exists in flow-catalog or service-catalog. Business scenario -> capabilities -> implementation must fully resolve." }
+      ]
+    },
+    {
+      "match": "execution_result.json",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "referenceExists", "field": "results[].testCaseId", "in": "automation-manifest.json -> artifacts.tests[].testCaseIds[]" },
+        { "type": "countEquals", "rule": "summary.total == results.length" },
+        { "type": "conditionalCheck", "if": "error field populated AND results[] contains zero passed/failed outcomes", "then": "quality gate will be NOT_EVALUATED", "_note": "An error string ALONE must NOT force NOT_EVALUATED. If results[] has >=1 passed/failed test, the reporter evaluates the real results and records the error in quality_gate.executionError. This matches reporter SKILL Step 1." },
+        { "type": "conditionalRequired", "if": "status == not_executed", "field": "skipReason", "notEmpty": true }
+      ]
+    },
+    {
+      "match": "quality_gate.json",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "sumEquals", "rule": "metrics.passed + metrics.failed + metrics.skipped + metrics.flaky == metrics.totalTests" },
+        { "type": "calculationCorrect", "field": "passRate", "formula": "passed / (passed + failed) * 100" },
+        { "type": "sumEquals", "rule": "failureCategories sum == failed + flaky" }
+      ],
+      "postActions": ["Generate Allure report", "Post JIRA comment (<2000 chars)", "Append run entry to pipeline-health.json"]
+    },
+    {
+      "match": "*.spec.ts",
+      "stopOnFail": false,
+      "validations": [
+        { "type": "bannedCode", "patterns": ["page.waitForTimeout", "setTimeout", "page.evaluate", "expect(true).toBe(true)", "body.innerText", "[cursor=pointer]", "[class*=", ".first()"] },
+        { "type": "bannedPatterns", "patterns": ["comma-separated selectors"] },
+        { "type": "importConstraint", "allowedFrom": ["fixtures/"], "bannedFrom": ["pages/", "components/", "services/", "flows/", "journeys/", "core/"] },
+        { "type": "tagCompleteness", "requiredTags": ["@domain", "@suite:smoke OR @suite:regression"], "scope": "describe blocks", "_note": "Required: @domain plus at least one @suite tag. A test in both suites carries both: @suite:smoke @suite:regression. Story is NOT a tag — it lives in the registry stories[] arrays (many-to-many). Do not require @story." },
+        { "type": "locatorIsolation", "bannedCode": ["page.getByTestId", "page.getByRole", "page.getByLabel", "page.getByText", "page.getByPlaceholder", "page.locator", "[data-testid=", "[aria-label="] },
+        { "type": "autofix", "action": "Rewrite offending lines immediately" }
+      ]
+    },
+    {
+      "match": "*.flow.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "bannedCode", "patterns": ["page.getByTestId", "page.getByRole", "page.getByLabel", "page.getByText", "page.getByPlaceholder", "page.locator", "[data-testid=", "[aria-label="] },
+        { "type": "importConstraint", "allowedFrom": ["pages/", "services/", "data/", "core/"], "bannedFrom": ["tests/", "fixtures/", "journeys/", "components/"], "_note": "Flows are the hybrid layer: may import pages (UI), services (API), and data." }
+      ]
+    },
+    {
+      "match": "*.journey.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "bannedCode", "patterns": ["page.getByTestId", "page.getByRole", "page.getByLabel", "page.getByText", "page.getByPlaceholder", "page.locator", "[data-testid=", "[aria-label="] },
+        { "type": "importConstraint", "allowedFrom": ["flows/", "data/", "core/"], "bannedFrom": ["tests/", "fixtures/", "pages/", "services/", "components/"], "_note": "Journeys orchestrate flows (+ data) only — no pages/services/locators." }
+      ]
+    },
+    {
+      "match": "*.service.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "bannedCode", "patterns": ["page.getByTestId", "page.getByRole", "page.getByLabel", "page.getByText", "page.getByPlaceholder", "page.locator", "[data-testid=", "[aria-label="], "_note": "Services are API-only — no UI locators." },
+        { "type": "importConstraint", "allowedFrom": ["data/", "core/"], "bannedFrom": ["tests/", "fixtures/", "journeys/", "flows/", "pages/", "components/"] }
+      ]
+    },
+    {
+      "match": "*.data.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "bannedCode", "patterns": ["page.getByTestId", "page.getByRole", "page.getByLabel", "page.getByText", "page.getByPlaceholder", "page.locator", "[data-testid=", "[aria-label="], "_note": "Data files are pure constants — no locators." },
+        { "type": "importConstraint", "allowedFrom": ["core/"], "bannedFrom": ["tests/", "fixtures/", "journeys/", "flows/", "services/", "pages/", "components/"], "_note": "data/ imports core types/constants only." }
+      ]
+    },
+    {
+      "match": "*.fixture.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "importConstraint", "allowedFrom": ["flows/", "journeys/", "data/", "core/"], "bannedFrom": ["tests/", "pages/", "services/", "components/"] }
+      ]
+    },
+    {
+      "match": "*.page.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "importConstraint", "allowedFrom": ["components/", "core/"], "bannedFrom": ["tests/", "fixtures/", "flows/"] }
+      ]
+    },
+    {
+      "match": "*.component.ts",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "importConstraint", "allowedFrom": ["core/"], "bannedFrom": ["tests/", "fixtures/", "flows/", "pages/"] }
+      ]
+    },
+    {
+      "match": "hyperexecute.yaml",
+      "stopOnFail": true,
+      "validations": [
+        { "type": "dryRunRequired", "rule": "TypeScript must compile before HyperExecute submission", "command": "npx tsc --noEmit", "maxFailures": 0, "scope": "TypeScript compilation passes with zero errors" },
+        { "type": "yamlStructure", "requiredKeys": ["version", "autosplit", "testDiscovery", "testRunnerCommand", "tunnel", "taskTimeout", "pre"], "_note": "testSuites is BANNED (forces single-machine). Parallelism uses autosplit + testDiscovery per hyperexecute-policy.json." },
+        { "type": "remoteRoutingPresent", "rule": "Effective run must route to the LambdaTest remote browser (Option B). The env block MUST set LT_CDP_URL (or the cloud config select), so playwright.config.ts resolves use.connectOptions.wsEndpoint. FAIL if neither LT_CDP_URL nor a cloud --config is present — otherwise tests silently run on a local browser on the HyperExecute VM (false green)." },
+        { "type": "envVarPresent", "key": "NODE_TLS_REJECT_UNAUTHORIZED", "value": "0", "reason": "Corporate proxy SSL inspection workaround" }
+      ]
+    },
+    {
+      "match": "playwright.config.ts",
+      "stopOnFail": false,
+      "validations": [
+        { "type": "siblingFileExists", "file": "tsconfig.json" },
+        { "type": "yamlCheck", "file": "hyperexecute.yaml", "rules": ["version 0.1", "autosplit + testDiscovery present (NOT testSuites)", "tunnel: true"] },
+        { "type": "fileExists", "pattern": "*.spec.ts", "minCount": 1 }
+      ]
+    }
+  ],
+  "defaultBehaviour": {
+    "noMatch": "SKIP entirely, no action needed"
+  }
+}

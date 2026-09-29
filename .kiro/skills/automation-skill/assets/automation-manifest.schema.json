@@ -1,0 +1,484 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "automation-manifest.schema.json",
+  "title": "AutomationManifest",
+  "description": "JSON Schema for the v4 Automation Manifest produced by the Automation Skill after layered code generation.",
+  "type": "object",
+  "required": ["storyKey", "runId", "timestamp", "domain", "summary", "artifacts", "validation", "registryUpdates"],
+  "properties": {
+    "storyKey": {
+      "type": "string",
+      "pattern": "^[A-Z]+-\\d+$",
+      "description": "JIRA story key (e.g., BREW-101)"
+    },
+    "app": {
+      "type": "string",
+      "description": "Resolved app key (story prefix, e.g. BREW). Identifies which isolated suite (apps[app].suiteDir) this run targeted."
+    },
+    "git": {
+      "type": "object",
+      "description": "Result of Step 8b commit/push to the app repo. Absent if git push was skipped (GitLab MCP unavailable). Never fabricated.",
+      "properties": {
+        "branch": { "type": "string", "description": "feature/{STORY-KEY}" },
+        "commit": { "type": "string", "description": "Commit SHA or ref returned by the GitLab MCP" },
+        "mrUrl": { "type": ["string", "null"], "description": "Merge request URL (draft, not merged) — null if not created" },
+        "status": { "type": "string", "enum": ["pushed", "skipped", "failed"] }
+      },
+      "additionalProperties": false
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Pipeline run identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO-8601 timestamp of manifest generation"
+    },
+    "domain": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Assigned domain tag (e.g., checkout, auth)"
+    },
+    "summary": {
+      "type": "object",
+      "required": ["generated", "modified", "reused", "totalTestCases"],
+      "properties": {
+        "generated": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of new files created"
+        },
+        "modified": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of existing files updated"
+        },
+        "reused": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of existing artifacts used without modification"
+        },
+        "totalTestCases": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total test cases covered by this run"
+        }
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["tests", "flows", "pages", "components", "fixtures"],
+      "properties": {
+        "tests": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TestArtifact" }
+        },
+        "flows": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/FlowArtifact" }
+        },
+        "journeys": {
+          "type": "array",
+          "description": "Cross-feature orchestration artifacts (compose multiple flows). Optional — present only when the story needs a cross-feature path.",
+          "items": { "$ref": "#/definitions/JourneyArtifact" }
+        },
+        "services": {
+          "type": "array",
+          "description": "API implementation artifacts (ApiClient-based). Optional — present for API/hybrid stories.",
+          "items": { "$ref": "#/definitions/ServiceArtifact" }
+        },
+        "pages": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/PageArtifact" }
+        },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ComponentArtifact" }
+        },
+        "fixtures": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/FixtureArtifact" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "required": ["localExecution"],
+      "properties": {
+        "notAutomatable": {
+          "type": "array",
+          "description": "Test cases intentionally not automated, each with a specific reason (coverage completeness). A TC absent from artifacts.tests[] MUST appear here.",
+          "items": {
+            "type": "object",
+            "required": ["testCaseId", "reason"],
+            "properties": {
+              "testCaseId": { "type": "string", "pattern": "^TC-(UI|API|NF)-\\d{3}$" },
+              "reason": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        },
+        "localExecution": {
+          "type": "object",
+          "required": ["ran", "passed", "failed", "status", "needsReview"],
+          "properties": {
+            "ran": {
+              "type": "boolean",
+              "description": "Whether local execution was performed"
+            },
+            "passed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of tests that passed"
+            },
+            "failed": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of tests that failed"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["all-passed", "needs-review", "fixed-and-passed"],
+              "description": "Overall local execution status"
+            },
+            "needsReview": {
+              "type": "array",
+              "items": { "$ref": "#/definitions/NeedsReviewEntry" },
+              "description": "Tests that failed and require human review"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "registryUpdates": {
+      "type": "object",
+      "required": ["flowCatalog", "pageCatalog", "componentCatalog", "fixtureCatalog", "domainIndex"],
+      "properties": {
+        "flowCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "journeyCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "serviceCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "pageCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "componentCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "fixtureCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "scenarioCatalog": { "$ref": "#/definitions/RegistryDelta" },
+        "domainIndex": { "$ref": "#/definitions/RegistryDelta" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "TestArtifact": {
+      "type": "object",
+      "required": ["file", "action", "testCaseIds", "tags"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Path relative to regression-suite/"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "testCaseIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^TC-(UI|API|NF)-\\d{3}$"
+          }
+        },
+        "tags": {
+          "type": "object",
+          "required": ["domain", "priority", "stories"],
+          "properties": {
+            "domain": { "type": "string" },
+            "priority": { "type": "string" },
+            "stories": {
+              "type": "array",
+              "items": { "type": "string" },
+              "minItems": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "FlowArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "pages"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to the per-app suite ({suiteDir}/)"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "pages": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Page objects (UI) called by this flow"
+        },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Service objects (API) called by this flow. A flow composing both pages and services is a hybrid flow."
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CapabilityEntry" },
+          "description": "Business capabilities this flow implements (each a stable {APP}-{DOMAIN}-{VERB} id → method)."
+        }
+      },
+      "additionalProperties": false
+    },
+    "JourneyArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "flows"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to the per-app suite ({suiteDir}/)"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "flows": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "Ordered flow names this journey composes (cross-feature). A journey contains no pages/services/locators."
+        }
+      },
+      "additionalProperties": false
+    },
+    "ServiceArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "capabilities"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to the per-app suite ({suiteDir}/)"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "domain": { "type": "string" },
+        "capabilities": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CapabilityEntry" },
+          "minItems": 1,
+          "description": "API capabilities this service implements (each a stable {APP}-{DOMAIN}-{VERB} id → method). Services are API-only — NO locators."
+        }
+      },
+      "additionalProperties": false
+    },
+    "CapabilityEntry": {
+      "type": "object",
+      "required": ["id", "method"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9]*-[A-Z0-9]+(-[A-Z0-9]+)+$",
+          "description": "Stable business capability id {APP}-{DOMAIN}-{VERB} (app-agnostic; APP is the resolved app key). Maps to exactly one implementation."
+        },
+        "name": { "type": "string", "description": "Human business name, e.g. 'Create Order'" },
+        "method": { "type": "string", "description": "Implementing method name, e.g. createOrder" },
+        "kind": { "type": "string", "enum": ["ui", "api", "hybrid"], "description": "Whether the capability drives UI (page), API (service), or both." }
+      },
+      "additionalProperties": false
+    },
+    "PageArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "locators", "components"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to regression-suite/"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "locators": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LocatorEntry" }
+        },
+        "components": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Component names composed into this page"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ComponentArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "locators"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to regression-suite/"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "locators": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LocatorEntry" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "FixtureArtifact": {
+      "type": "object",
+      "required": ["name", "file", "action", "providers"],
+      "properties": {
+        "name": { "type": "string" },
+        "file": {
+          "type": "string",
+          "description": "Path relative to regression-suite/"
+        },
+        "action": {
+          "type": "string",
+          "enum": ["created", "modified", "reused"]
+        },
+        "providers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Provider names exposed by this fixture"
+        }
+      },
+      "additionalProperties": false
+    },
+    "LocatorEntry": {
+      "type": "object",
+      "required": ["name", "strategy", "value", "evidence"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Locator identifier (e.g., submitButton)"
+        },
+        "strategy": {
+          "type": "string",
+          "description": "Locator strategy (e.g., data-testid, aria-label, role)"
+        },
+        "value": {
+          "type": "string",
+          "description": "The actual selector value"
+        },
+        "evidence": { "$ref": "#/definitions/LocatorEvidence" },
+        "fallbacks": {
+          "type": "array",
+          "description": "Evidence-backed fallback selectors chained after the primary via .or(). EVERY fallback must carry its own count===1 evidence — an unverified fallback is a banned guess (see selector-policy.json → evidenceForEveryLink).",
+          "items": {
+            "type": "object",
+            "required": ["strategy", "value", "evidence"],
+            "properties": {
+              "strategy": { "type": "string" },
+              "value": { "type": "string" },
+              "evidence": { "$ref": "#/definitions/LocatorEvidence" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "unstable": {
+          "type": "boolean",
+          "description": "True if the primary selector failed local validation and the element only passed via a fallback — flags the primary for re-inspection (instabilitySurfacing). A fallback-carried pass is a yellow, never a clean green."
+        }
+      },
+      "additionalProperties": false
+    },
+    "LocatorEvidence": {
+      "type": "object",
+      "required": ["source", "count", "discoveredAt", "verifiedBy"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["playwright-mcp", "browser-devtools", "page-snapshot"],
+          "description": "Real discovery source — never invented"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1,
+          "description": "MEASURED match count returned by executing the locator against the live DOM (browser_evaluate .length or locator.count()). Must be exactly 1 (0 = not found; >1 = ambiguous). NEVER a value assumed/typed by the agent — see selector-policy.json → evidence.verificationRequired."
+        },
+        "verifiedBy": {
+          "type": "string",
+          "enum": ["browser_evaluate", "locator.count()", "page-snapshot-match"],
+          "description": "HOW count was measured. Records that the locator was actually executed. A locator without a real verifiedBy is unverified and MUST be rejected (no 'assumed'/'manual' allowed)."
+        },
+        "discoveredAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO-8601 timestamp of discovery"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NeedsReviewEntry": {
+      "type": "object",
+      "required": ["testCaseId", "file", "reason", "classification"],
+      "properties": {
+        "testCaseId": {
+          "type": "string",
+          "pattern": "^TC-(UI|API|NF)-\\d{3}$"
+        },
+        "file": {
+          "type": "string",
+          "description": "Path to the failing test file"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Assertion failure description"
+        },
+        "classification": {
+          "type": "string",
+          "enum": ["product-defect"],
+          "description": "Failure classification"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RegistryDelta": {
+      "type": "object",
+      "required": ["added", "modified", "unchanged"],
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entry names added"
+        },
+        "modified": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Entry names updated"
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Count of entries not touched"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

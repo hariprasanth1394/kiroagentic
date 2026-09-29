@@ -1,0 +1,94 @@
+{
+  "description": "HyperExecute YAML generation and execution rules. Execution Agent reads this to build YAML configs.",
+  "version": "3.0.0",
+  "yamlTemplate": {
+    "version": "0.1",
+    "globalTimeout": 900,
+    "testSuiteTimeout": 600,
+    "testSuiteStep": 90,
+    "taskTimeout": 600,
+    "runson": "win",
+    "concurrency": 2,
+    "retryOnFailure": true,
+    "maxRetries": 1,
+    "tunnel": true,
+    "tunnelNames": ["ECS-Shared-Tunnel-NonProd"]
+  },
+  "frameworks": {
+    "playwright": {
+      "parallelMethod": "autosplit + testDiscovery (NOT testSuites)",
+      "autosplit": true,
+      "testDiscovery": {
+        "type": "raw",
+        "mode": "dynamic",
+        "commandPattern": "echo {spec1} && echo {spec2} && echo {spec3}"
+      },
+      "testRunnerCommand": "npx playwright test $test --project=chromium",
+      "runtime": { "language": "node", "version": "18" },
+      "pre": ["npm config set strict-ssl false", "npm install"],
+      "env": {
+        "BASE_URL": "{from the resolved per-app {envConfig}, e.g. env_config.BREW.json → appUrl/apiBaseUrl}",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0",
+        "LT_USERNAME": "hariprasanth.r",
+        "LT_ACCESS_KEY": "z46KhB5zOGMyTnB6DTSce7msVFyQyt4qlkyGwddFfvpFYcUGYD",
+        "LT_CDP_URL": "{built at generation time via assets/playwright-cloud-config.ts buildLtCdpUrl() — routes tests to the LambdaTest remote browser. playwright.config.ts reads this into use.connectOptions.wsEndpoint. If absent, tests would run on a LOCAL browser on the VM (false green) — this MUST be set for remote runs.}"
+      },
+      "report": {
+        "enabled": true,
+        "partialReports": {
+          "location": "allure-results",
+          "frameworkName": "allure",
+          "type": "html"
+        }
+      },
+      "uploadArtefacts": [
+        { "name": "Allure Results", "path": ["allure-results/**"] },
+        { "name": "Allure Report", "path": ["allure-report/**"] }
+      ],
+      "reporters": ["list", "allure-playwright"],
+      "browserExecution": "remote",
+      "remoteRouting": {
+        "mechanism": "cloud-overlay-env (Option B)",
+        "how": "Inject LT_CDP_URL (built via assets/playwright-cloud-config.ts buildLtCdpUrl()) into the YAML env block. The regression-suite playwright.config.ts reads process.env.LT_CDP_URL into use.connectOptions.wsEndpoint. Specs stay cloud-agnostic (import from fixtures/ only).",
+        "noSetupFile": "There is NO lambdatest-setup.ts. Routing is config-level, not spec-level. Do not create one and do not import it.",
+        "autoHeal": false,
+        "autoHealRationale": "Grid-level selector auto-heal is DISABLED — it silently rewrites selectors and masks real breakage (false green), contradicting the evidence-first selector policy. Selector fixes happen in Page Objects with DOM evidence."
+      },
+      "banned": [
+        "npm ci",
+        "npx playwright install (not needed — remote browser)",
+        "npx playwright install --with-deps",
+        "tsc --noEmit in pre",
+        "framework: playwright (forces single machine)",
+        "testSuites for parallel execution (all run on 1 machine)",
+        "testDiscovery type:automatic (requires Test Manager snooper)",
+        "lambdatest-setup.ts (routing is via LT_CDP_URL + connectOptions, NOT a spec-level setup file)",
+        "grid autoHeal (masks selector breakage — fix selectors with DOM evidence instead)"
+      ]
+    },
+  "_frameworksNote": "This pipeline is Playwright-only. There is intentionally no maven/testng/cucumber framework block — do not add one."
+  },
+  "execution": {
+    "binaryPath": "hyperexecute.exe",
+    "_binaryPathNote": "Relative to the workspace root. The binary is provisioned at the repo root (mutable/root files); only .kiro/ holds immutable config. Never hardcode a user-specific absolute path here.",
+    "credentialSource": "qe-pipeline/.env",
+    "usernameKey": "LT_USERNAME",
+    "accessKeyKey": "LT_ACCESS_KEY",
+    "_credentialsNote": "Username/access key are read from qe-pipeline/.env at runtime. No default/example username is stored here."
+  },
+  "banned": {
+    "yamlKeys": ["autosplit with map value", "framework:playwright block"],
+    "preSteps": ["tsc --noEmit", "npm ci", "npx playwright install chromium"],
+    "cliFlags": []
+  },
+  "preflightChecks": [
+    "Spec files exist on disk",
+    "Test count > 0",
+    "No duplicate TC-IDs across spec files",
+    "All spec imports resolve to fixtures/ only (import { test, expect } from '<fixtures>/{domain}.fixture') — NOT @playwright/test, NOT a lambdatest-setup module",
+    "LT_CDP_URL is present in the YAML env block (remote routing) — FAIL if absent, otherwise tests run on a LOCAL browser on the VM (false green)",
+    "Tunnel enabled",
+    "Credentials loaded from .env",
+    "Stale artifacts cleaned (test-results/, .hyperexecute/, hyperexecute-code-*.zip)"
+  ]
+}

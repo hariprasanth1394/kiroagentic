@@ -1,0 +1,42 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "retest-summary.schema.json",
+  "title": "Retest Summary Contract",
+  "description": "Machine-validated output of the Retest Skill (final pipeline artifact). Records re-execution of tests linked to bugs marked Ready for Retest and the resulting JIRA transitions.",
+  "type": "object",
+  "required": ["storyKey", "storyUrl", "date", "bugsRetested", "totals"],
+  "properties": {
+    "storyKey": { "type": "string", "pattern": "^[A-Z]+-\\d+$" },
+    "storyUrl": { "type": "string" },
+    "date": { "type": "string", "format": "date-time" },
+    "status": { "type": "string", "enum": ["complete", "JIRA pending", "deferred", "no-bugs-ready"] },
+    "bugsRetested": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["jiraKey", "jiraUrl", "testCaseId", "result", "action", "notes"],
+        "properties": {
+          "jiraKey": { "type": "string" },
+          "jiraUrl": { "type": "string" },
+          "testCaseId": { "type": ["string", "null"] },
+          "result": { "type": "string", "enum": ["PASSED", "FAILED", "SKIPPED"] },
+          "action": { "type": ["string", "null"], "enum": ["Closed", "Reopened", null] },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "totals": {
+      "type": "object",
+      "required": ["retested", "closed", "reopened", "skipped"],
+      "properties": {
+        "retested": { "type": "integer", "minimum": 0 },
+        "closed": { "type": "integer", "minimum": 0 },
+        "reopened": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

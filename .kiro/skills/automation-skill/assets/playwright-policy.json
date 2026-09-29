@@ -1,0 +1,79 @@
+{
+  "description": "Playwright test generation rules for the regression suite. Automation Skill reads this when generating layered test code.",
+  "version": "2.0.0",
+  "architectureAuthority": {
+    "file": "playwright-standard.json",
+    "role": "Defines the six-layer architecture, dependency constraints, and generation patterns. This policy governs runtime behaviour; playwright-standard.json governs structural rules."
+  },
+  "structure": {
+    "target": "{suiteDir}/",
+    "_targetNote": "The PER-APP suite resolved in SKILL Step 0 from pipeline-config.json → apps[appKey].suiteDir (e.g. qe-pipeline/output/regression-suite-BREW/). Suites are isolated per app — never a single shared regression-suite/. All 'regression-suite/...' paths below mean this resolved {suiteDir}.",
+    "imports": {
+      "tests": ["import { test, expect } from '@fixtures/{domain}.fixture'"],
+      "fixtures": ["import { {Journey}Flow } from '@flows/{journey}.flow'", "import { {Name}Journey } from '@journeys/{journey-name}.journey'", "import { BasePage } from '@core/base-page'"],
+      "journeys": ["import { {Journey}Flow } from '@flows/{journey}.flow'"],
+      "flows": ["import { {Page}Page } from '@pages/{page-name}.page'", "import { {Name}Service } from '@services/{name}.service'", "import { BasePage } from '@core/base-page'"],
+      "services": ["import { ApiClient } from '@core/api-client'"],
+      "pages": ["import { {Widget}Component } from '@components/{widget}.component'", "import { BasePage } from '@core/base-page'"],
+      "components": ["import { BasePage } from '@core/base-page'"]
+    },
+    "pattern": "Arrange-Act-Assert per test block",
+    "oneTestPerBehaviour": true,
+    "maxTestsPerFile": 10,
+    "fixturePattern": "{domain}.fixture.ts"
+  },
+  "banned": {
+    "methods": [
+      "page.waitForTimeout",
+      "setTimeout",
+      "page.evaluate",
+      "page.$()",
+      "page.$$()"
+    ],
+    "assertions": [
+      "expect(true).toBe(true)",
+      "expect(false).toBe(false)"
+    ],
+    "patterns": [
+      "body.innerText",
+      ".first() as band-aid for multiple matches",
+      "hardcoded sleep/delay",
+      "import from lambdatest-setup.ts",
+      "direct page imports in test files",
+      "locators in test files",
+      "locators in flow files",
+      "locators in journey files",
+      "locators in service files (services are API-only)",
+      "invented/hardcoded API endpoint paths in service files (use story/contract paths or {API_ENDPOINT})"
+    ]
+  },
+  "required": {
+    "waitStrategy": "Use auto-waiting (locator-based). If explicit wait needed, use waitForSelector or expect with timeout.",
+    "assertions": "Every test MUST have at least one meaningful expect(). No empty tests.",
+    "isolation": "Tests must not depend on execution order. Each test starts from clean state.",
+    "cleanup": "Use afterEach or test.afterAll for teardown if state was modified."
+  },
+  "navigation": {
+    "useBaseURL": true,
+    "relativePathsPreferred": true,
+    "waitForLoadState": "domcontentloaded"
+  },
+  "fixtures": {
+    "useFor": ["authentication", "test data", "cookie handling", "shared setup", "flow injection"],
+    "filePattern": "{domain}.fixture.ts",
+    "location": "regression-suite/fixtures/",
+    "note": "Tests import test/expect from fixtures only. Fixtures extend Playwright base test and inject flows."
+  },
+  "reporter": {
+    "configured": ["list", "allure-playwright"],
+    "mandatory": ["allure-playwright"],
+    "allureConfig": { "outputFolder": "allure-results" },
+    "configLocation": "playwright.config.ts reporters array",
+    "note": "Allure is mandatory for visual report generation. Use --single-file flag when generating to produce a self-contained HTML.",
+    "generation": {
+      "command": "npx allure generate allure-results --clean --single-file -o ../reporter/allure-report",
+      "outputPath": "reporter/allure-report/index.html",
+      "requiresServer": false
+    }
+  }
+}
